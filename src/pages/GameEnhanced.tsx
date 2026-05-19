@@ -1,15 +1,16 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, HelpCircle, Zap, Star, MapPin, Target } from "lucide-react";
+import { Clock, HelpCircle, Zap, Star, MapPin, Target, Puzzle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useAnonymousAuth } from "@/hooks/useAnonymousAuth";
 import { useGameSession } from "@/hooks/useGameSession";
-import { DIFFICULTY_CONFIG, calculateJigsawScore, getRandomizedStages } from "@/lib/gameData";
+import { DIFFICULTY_CONFIG, calculateJigsawScore, getRandomizedStagesForPlayer } from "@/lib/gameData";
+import { useBestIdeasAnswer } from "@/hooks/useBestIdeasAnswer";
 import { playCorrectSound, playIncorrectSound, playCelebrationSound } from "@/lib/audioFeedback";
-import elephantPuzzleImage from "@/assets/elephant-puzzle-new.png";
+import elephantPuzzleImage from "@/assets/elephant-jewel-forest.png";
 import { JigsawImagePuzzle, getGridConfig } from "@/components/game/JigsawImagePuzzle";
 import { CompletionOverlay } from "@/components/game/CompletionOverlay";
 import { InstructionsModal } from "@/components/InstructionsModal";
@@ -19,7 +20,8 @@ import confetti from "canvas-confetti";
 const GameEnhanced = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
-  const { userId } = useAnonymousAuth();
+  const { userId, loading: authLoading } = useAnonymousAuth();
+  const { answer: bestIdeasAnswer, loading: bestIdeasLoading } = useBestIdeasAnswer(userId);
   const { session, players, currentPlayer, updateScore } = useGameSession(sessionId ?? null, userId);
   const isGameMaster = currentPlayer?.is_game_master ?? false;
 
@@ -43,8 +45,13 @@ const GameEnhanced = () => {
   const gridConfig = getGridConfig(difficulty);
   const totalPieces = gridConfig.totalToPlace;
 
-  /** Randomized stages per game — drives statement layout on puzzle pieces */
-  const [stages] = useState(() => getRandomizedStages());
+  /** Randomized stages per game — student's best-ideas answer becomes an incubation piece */
+  const stages = useMemo(
+    () => getRandomizedStagesForPlayer(bestIdeasAnswer),
+    [bestIdeasAnswer],
+  );
+
+  const profileLoading = authLoading || (!!userId && bestIdeasLoading);
 
   const isPaused = !!session?.paused_at;
   const pausedAccumulatedRef = useRef(0);
@@ -173,6 +180,20 @@ const GameEnhanced = () => {
   }, [timeUp, completed, difficulty, elapsedMs, incorrectAttempts, totalPieces, updateScore]);
 
   if (isGameMaster) return null;
+
+  if (profileLoading) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+          aria-label="Loading game"
+        >
+          <Puzzle className="h-12 w-12 text-primary" />
+        </motion.div>
+      </div>
+    );
+  }
 
   // Avoid a blank screen: if session can't be fetched (network/auth/RLS), show a recovery UI.
   if (!session) {

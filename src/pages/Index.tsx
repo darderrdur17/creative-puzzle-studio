@@ -1,19 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Puzzle, Users, Trophy, ArrowRight, BookOpen,
-  LogIn, Sparkles, LogOut, PlusCircle,
+  LogIn, Sparkles, LogOut, PlusCircle, Cloud, Lightbulb,
 } from "lucide-react";
 import { AppLogo } from "@/components/AppLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useAnonymousAuth } from "@/hooks/useAnonymousAuth";
+import { usePlayerAuth } from "@/hooks/usePlayerAuth";
 import { useTeacherAuth } from "@/hooks/useTeacherAuth";
+import { useStudentAuth } from "@/hooks/useStudentAuth";
 import { useGameSession } from "@/hooks/useGameSession";
-import elephantImg from "@/assets/elephant-puzzle-new.png";
+import { BestIdeasQuestion } from "@/components/BestIdeasQuestion";
+import { useBestIdeasAnswer } from "@/hooks/useBestIdeasAnswer";
+import elephantImg from "@/assets/elephant-jewel-forest.png";
 
 const STAGES = [
   { name: "Preparation",  color: "bg-stage-preparation",  emoji: "🔵" },
@@ -31,7 +34,19 @@ const Index = () => {
   const { user: teacherUser, displayName: teacherName, signOut: teacherSignOut, loading: teacherAuthLoading } = useTeacherAuth();
 
   // Anonymous auth (used for both teachers creating games and students joining)
-  const { userId, loading: authLoading, authError, retryAuth } = useAnonymousAuth();
+  const {
+    userId,
+    loading: authLoading,
+    authError,
+    retryAuth,
+    isRegisteredStudent,
+  } = usePlayerAuth();
+  const {
+    user: studentUser,
+    displayName: studentDisplayName,
+    email: studentEmail,
+    signOut: studentSignOut,
+  } = useStudentAuth();
   const { createSession, joinSession, error, setError } = useGameSession(null, userId);
 
   const loading = authLoading || teacherAuthLoading;
@@ -39,7 +54,36 @@ const Index = () => {
   const [nickname, setNickname] = useState(() => teacherName ?? "");
   const [gameCode, setGameCode] = useState(joinCode || "");
   const [mode, setMode] = useState<"home" | "create" | "join">(joinCode ? "join" : "home");
+  const [joinStep, setJoinStep] = useState<"ideas" | "details">("details");
   const [submitting, setSubmitting] = useState(false);
+
+  const {
+    hasAnswer: hasBestIdeas,
+    loading: bestIdeasLoading,
+    saving: bestIdeasSaving,
+    error: bestIdeasError,
+    setError: setBestIdeasError,
+    saveAnswer: saveBestIdeas,
+  } = useBestIdeasAnswer(userId);
+
+  const isStudent = !teacherUser;
+  const needsBestIdeasAnswer = isStudent && !bestIdeasLoading && !!userId && !hasBestIdeas;
+  const studentActionsBlocked = isStudent && (authLoading || bestIdeasLoading || !userId);
+
+  useEffect(() => {
+    if (mode === "join" && !bestIdeasLoading && userId && !hasBestIdeas) {
+      setJoinStep("ideas");
+    } else if (mode === "join" && !bestIdeasLoading) {
+      setJoinStep("details");
+    }
+  }, [mode, userId, hasBestIdeas, bestIdeasLoading]);
+
+  const handleBestIdeasSubmit = async (answer: string) => {
+    const ok = await saveBestIdeas(answer);
+    if (ok && mode === "join") {
+      setJoinStep("details");
+    }
+  };
 
   const handleCreate = async () => {
     const name = nickname.trim() || teacherName || "Teacher";
@@ -78,6 +122,11 @@ const Index = () => {
     setMode("home");
   };
 
+  const handleStudentSignOut = async () => {
+    await studentSignOut();
+    setMode("home");
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -92,9 +141,9 @@ const Index = () => {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-4 py-8">
+    <div className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-x-hidden overflow-y-auto bg-background px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]">
       {/* Controls */}
-      <div className="absolute right-4 top-4 z-20">
+      <div className="absolute right-4 z-20 top-[max(1rem,env(safe-area-inset-top))]">
         <ThemeToggle />
       </div>
 
@@ -103,7 +152,8 @@ const Index = () => {
         <img
           src={elephantImg}
           alt=""
-          className="h-full w-full object-cover opacity-[0.13] dark:opacity-[0.08]"
+          className="h-full w-full object-cover object-center opacity-[0.13] dark:opacity-[0.08]"
+          decoding="async"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/30 to-background/70" />
       </div>
@@ -226,10 +276,61 @@ const Index = () => {
               transition={{ duration: 0.22 }}
               className="flex w-full flex-col gap-3"
             >
+              {isRegisteredStudent && studentUser && (
+                <div className="flex items-center justify-between gap-3 rounded-2xl border border-stage-incubation/30 bg-stage-incubation/5 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Cloud className="h-3.5 w-3.5 shrink-0" />
+                      Synced across devices
+                    </p>
+                    <p className="font-display font-bold text-foreground truncate">
+                      {studentDisplayName}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground truncate">{studentEmail}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0 text-muted-foreground hover:text-destructive min-h-[44px] touch-manipulation"
+                    onClick={() => void handleStudentSignOut()}
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+
+              {needsBestIdeasAnswer && (
+                <BestIdeasQuestion
+                  onSubmit={handleBestIdeasSubmit}
+                  submitting={bestIdeasSaving}
+                  disabled={studentActionsBlocked}
+                  error={bestIdeasError}
+                />
+              )}
+
+              {isStudent && !isRegisteredStudent && !needsBestIdeasAnswer && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2 min-h-[44px] touch-manipulation border-stage-incubation/30 text-foreground"
+                  onClick={() => navigate("/student/login")}
+                >
+                  <Lightbulb className="h-4 w-4 text-stage-incubation" />
+                  Save your ideas across devices (optional)
+                </Button>
+              )}
+
+              {isStudent && !bestIdeasLoading && !userId && authError && (
+                <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
+                  {authError} Sign-in is required before you can join a game.
+                </p>
+              )}
+
               {/* Student join — primary action */}
               <Button
                 size="lg"
-                className="w-full gap-2 text-base shadow-lg shadow-primary/20"
+                className="w-full gap-2 text-base shadow-lg shadow-primary/20 min-h-[48px] touch-manipulation"
+                disabled={needsBestIdeasAnswer || studentActionsBlocked}
                 onClick={() => setMode("join")}
               >
                 <Users className="h-5 w-5" />
@@ -330,7 +431,32 @@ const Index = () => {
           )}
 
           {/* ── JOIN GAME panel (students) ── */}
-          {mode === "join" && (
+          {mode === "join" && joinStep === "ideas" && (
+            <motion.div
+              key="join-ideas"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.22 }}
+              className="w-full space-y-3"
+            >
+              <BestIdeasQuestion
+                onSubmit={handleBestIdeasSubmit}
+                submitting={bestIdeasSaving}
+                disabled={studentActionsBlocked}
+                error={bestIdeasError}
+              />
+              <Button
+                variant="ghost"
+                className="w-full min-h-[48px] touch-manipulation"
+                onClick={() => { setMode("home"); setError(null); setBestIdeasError(null); }}
+              >
+                Back
+              </Button>
+            </motion.div>
+          )}
+
+          {mode === "join" && joinStep === "details" && (
             <motion.div
               key="join"
               initial={{ opacity: 0, y: 12 }}

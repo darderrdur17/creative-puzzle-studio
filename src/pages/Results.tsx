@@ -9,7 +9,7 @@ import { useGameSession } from "@/hooks/useGameSession";
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import confetti from "canvas-confetti";
-import elephantPuzzleImage from "@/assets/elephant-puzzle-new.png";
+import elephantPuzzleImage from "@/assets/elephant-jewel-forest.png";
 
 const DIFFICULTY_LABELS: Record<string, string> = {
   easy: "Easy",
@@ -179,7 +179,8 @@ const Results = () => {
           <img
             src={elephantPuzzleImage}
             alt="Complete creativity puzzle: elephant artwork"
-            className="mx-auto max-h-[min(52vh,440px)] w-full rounded-lg object-contain"
+            className="mx-auto max-h-[min(52vh,440px)] w-full rounded-lg object-contain object-center"
+            decoding="async"
           />
           <p className="mt-2 text-center text-xs font-medium text-muted-foreground">The complete puzzle</p>
         </motion.div>

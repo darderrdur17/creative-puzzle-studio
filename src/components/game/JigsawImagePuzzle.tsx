@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronUp, ChevronDown, Puzzle, Quote } from "lucide-react";
-import elephantImg from "@/assets/elephant-puzzle-new.png";
+import elephantImg from "@/assets/elephant-jewel-forest.png";
 import type { CreativityStage } from "@/lib/gameData";
 import {
   getLevelFromDifficulty,
@@ -61,8 +61,14 @@ function randomQuoteForStage(stage: CreativityStage): string {
 
 /** Sample N unique quotes from a stage — ensures no duplicates per column (feedback: no doubles) */
 function sampleUniqueQuotesForStage(stage: CreativityStage, count: number): string[] {
-  const shuffled = shuffleArray([...stage.quotes]);
-  return shuffled.slice(0, Math.min(count, shuffled.length));
+  if (count <= 0) return [];
+  const { personalQuote } = stage;
+  const pool = shuffleArray([...stage.quotes]);
+  if (personalQuote && count > 0) {
+    const rest = pool.filter((q) => q !== personalQuote);
+    return [personalQuote, ...rest.slice(0, count - 1)];
+  }
+  return pool.slice(0, Math.min(count, pool.length));
 }
 
 export function JigsawImagePuzzle({
@@ -343,8 +349,9 @@ export function JigsawImagePuzzle({
           <img
             src={elephantImg}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover rounded-xl pointer-events-none opacity-[0.13]"
+            className="absolute inset-0 w-full h-full object-cover object-center rounded-xl pointer-events-none opacity-[0.13]"
             draggable={false}
+            decoding="async"
             aria-hidden
           />
 

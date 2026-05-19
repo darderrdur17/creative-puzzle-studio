@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import elephantImg from "@/assets/elephant-puzzle-new.png";
+import elephantImg from "@/assets/elephant-jewel-forest.png";
 
 interface Tile {
   /** Index in solved order (0..8) */
@@ -210,7 +210,8 @@ export const EightPuzzleLab: React.FC = () => {
               <img
                 src={elephantImg}
                 alt="Original elephant puzzle"
-                className="w-full h-auto object-contain"
+                className="w-full h-auto max-h-[min(50vh,400px)] object-contain object-center"
+                decoding="async"
               />
             </div>
           </div>

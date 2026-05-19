@@ -5,6 +5,8 @@ export interface CreativityStage {
   quotes: string[]; // Multiple quotes for randomization
   quote: string;    // The selected quote for this game session
   color: string;
+  /** Student's answer from onboarding — always included as an incubation quote piece */
+  personalQuote?: string;
 }
 
 export const CREATIVITY_STAGES_BASE: Omit<CreativityStage, "quote">[] = [
@@ -56,6 +58,34 @@ export function getRandomizedStages(): CreativityStage[] {
     ...stage,
     quote: stage.quotes[Math.floor(Math.random() * stage.quotes.length)],
   }));
+}
+
+/** Add the student's "best ideas" answer as a guaranteed incubation puzzle quote */
+export function injectStudentIncubationQuote(
+  stages: CreativityStage[],
+  studentAnswer: string,
+): CreativityStage[] {
+  const personalQuote = studentAnswer.trim();
+  if (!personalQuote) return stages;
+
+  return stages.map((stage) => {
+    if (stage.id !== "incubation") return stage;
+    const quotes = stage.quotes.includes(personalQuote)
+      ? stage.quotes
+      : [...stage.quotes, personalQuote];
+    return {
+      ...stage,
+      quotes,
+      quote: personalQuote,
+      personalQuote,
+    };
+  });
+}
+
+export function getRandomizedStagesForPlayer(studentAnswer?: string | null): CreativityStage[] {
+  const base = getRandomizedStages();
+  if (!studentAnswer?.trim()) return base;
+  return injectStudentIncubationQuote(base, studentAnswer);
 }
 
 /**

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import puzzleBgImg from "@/assets/elephant-puzzle-new.png";
+import puzzleBgImg from "@/assets/elephant-jewel-forest.png";
 
 type GridSize = 3 | 4;
 

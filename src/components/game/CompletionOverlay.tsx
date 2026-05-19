@@ -61,7 +61,8 @@ export function CompletionOverlay({
                 <img
                   src={puzzleImageSrc}
                   alt="Complete puzzle"
-                  className="mx-auto max-h-[min(42vh,360px)] w-full object-contain"
+                  className="mx-auto max-h-[min(42vh,360px)] w-full object-contain object-center"
+                  decoding="async"
                 />
                 <p className="mt-2 text-[11px] font-medium text-muted-foreground">The complete puzzle</p>
               </motion.div>

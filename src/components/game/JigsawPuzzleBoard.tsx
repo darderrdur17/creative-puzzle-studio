@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { motion, AnimatePresence } from "framer-motion";
 import { CreativityStage, stageColors } from "@/lib/gameData";
-import puzzleBgImg from "@/assets/elephant-puzzle-new.png";
+import puzzleBgImg from "@/assets/elephant-jewel-forest.png";
 import { SparkleEffect } from "./SparkleEffect";
 
 interface PuzzlePiece {
@@ -149,7 +149,8 @@ export function JigsawPuzzleBoard({
         <img
           src={puzzleBgImg}
           alt="Creativity Elephant Puzzle"
-          className="h-full w-full object-cover rounded-xl transition-all duration-700"
+          className="h-full w-full object-cover object-center rounded-xl transition-all duration-700"
+          decoding="async"
           draggable={false}
         />
 
