@@ -11,8 +11,6 @@ import Results from "./pages/Results";
 import Leaderboard from "./pages/Leaderboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import TeacherLogin from "./pages/TeacherLogin";
-import StudentLogin from "./pages/StudentLogin";
-import AuthCallback from "./pages/AuthCallback";
 import GameTimePage from "./pages/GameTimePage";
 import NotFound from "./pages/NotFound";
 
@@ -28,8 +26,6 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/teacher/login" element={<TeacherLogin />} />
-            <Route path="/student/login" element={<StudentLogin />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/lobby/:sessionId" element={<Lobby />} />
             <Route path="/game/:sessionId" element={<GameEnhanced />} />
             <Route path="/results/:sessionId" element={<Results />} />

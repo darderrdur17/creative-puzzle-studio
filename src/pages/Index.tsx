@@ -3,16 +3,15 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Puzzle, Users, Trophy, ArrowRight, BookOpen,
-  LogIn, Sparkles, LogOut, PlusCircle, Cloud, Lightbulb,
+  LogIn, Sparkles, LogOut, PlusCircle,
 } from "lucide-react";
 import { AppLogo } from "@/components/AppLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { usePlayerAuth } from "@/hooks/usePlayerAuth";
+import { useAnonymousAuth } from "@/hooks/useAnonymousAuth";
 import { useTeacherAuth } from "@/hooks/useTeacherAuth";
-import { useStudentAuth } from "@/hooks/useStudentAuth";
 import { useGameSession } from "@/hooks/useGameSession";
 import { BestIdeasQuestion } from "@/components/BestIdeasQuestion";
 import { useBestIdeasAnswer } from "@/hooks/useBestIdeasAnswer";
@@ -34,19 +33,7 @@ const Index = () => {
   const { user: teacherUser, displayName: teacherName, signOut: teacherSignOut, loading: teacherAuthLoading } = useTeacherAuth();
 
   // Anonymous auth (used for both teachers creating games and students joining)
-  const {
-    userId,
-    loading: authLoading,
-    authError,
-    retryAuth,
-    isRegisteredStudent,
-  } = usePlayerAuth();
-  const {
-    user: studentUser,
-    displayName: studentDisplayName,
-    email: studentEmail,
-    signOut: studentSignOut,
-  } = useStudentAuth();
+  const { userId, loading: authLoading, authError, retryAuth } = useAnonymousAuth();
   const { createSession, joinSession, error, setError } = useGameSession(null, userId);
 
   const loading = authLoading || teacherAuthLoading;
@@ -68,7 +55,7 @@ const Index = () => {
 
   const isStudent = !teacherUser;
   const needsBestIdeasAnswer = isStudent && !bestIdeasLoading && !!userId && !hasBestIdeas;
-  const studentActionsBlocked = isStudent && (authLoading || bestIdeasLoading || !userId);
+  const guestActionsBlocked = isStudent && (authLoading || bestIdeasLoading || !userId);
 
   useEffect(() => {
     if (mode === "join" && !bestIdeasLoading && userId && !hasBestIdeas) {
@@ -119,11 +106,6 @@ const Index = () => {
 
   const handleTeacherSignOut = async () => {
     await teacherSignOut();
-    setMode("home");
-  };
-
-  const handleStudentSignOut = async () => {
-    await studentSignOut();
     setMode("home");
   };
 
@@ -276,48 +258,13 @@ const Index = () => {
               transition={{ duration: 0.22 }}
               className="flex w-full flex-col gap-3"
             >
-              {isRegisteredStudent && studentUser && (
-                <div className="flex items-center justify-between gap-3 rounded-2xl border border-stage-incubation/30 bg-stage-incubation/5 px-4 py-3">
-                  <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Cloud className="h-3.5 w-3.5 shrink-0" />
-                      Synced across devices
-                    </p>
-                    <p className="font-display font-bold text-foreground truncate">
-                      {studentDisplayName}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground truncate">{studentEmail}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="shrink-0 text-muted-foreground hover:text-destructive min-h-[44px] touch-manipulation"
-                    onClick={() => void handleStudentSignOut()}
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-
               {needsBestIdeasAnswer && (
                 <BestIdeasQuestion
                   onSubmit={handleBestIdeasSubmit}
                   submitting={bestIdeasSaving}
-                  disabled={studentActionsBlocked}
+                  disabled={guestActionsBlocked}
                   error={bestIdeasError}
                 />
-              )}
-
-              {isStudent && !isRegisteredStudent && !needsBestIdeasAnswer && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full gap-2 min-h-[44px] touch-manipulation border-stage-incubation/30 text-foreground"
-                  onClick={() => navigate("/student/login")}
-                >
-                  <Lightbulb className="h-4 w-4 text-stage-incubation" />
-                  Save your ideas across devices (optional)
-                </Button>
               )}
 
               {isStudent && !bestIdeasLoading && !userId && authError && (
@@ -330,7 +277,7 @@ const Index = () => {
               <Button
                 size="lg"
                 className="w-full gap-2 text-base shadow-lg shadow-primary/20 min-h-[48px] touch-manipulation"
-                disabled={needsBestIdeasAnswer || studentActionsBlocked}
+                disabled={needsBestIdeasAnswer || guestActionsBlocked}
                 onClick={() => setMode("join")}
               >
                 <Users className="h-5 w-5" />
@@ -443,7 +390,7 @@ const Index = () => {
               <BestIdeasQuestion
                 onSubmit={handleBestIdeasSubmit}
                 submitting={bestIdeasSaving}
-                disabled={studentActionsBlocked}
+                disabled={guestActionsBlocked}
                 error={bestIdeasError}
               />
               <Button

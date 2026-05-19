@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
-import { AUTH_ROLE_KEY, isTeacherUser } from "@/lib/authRoles";
 
 export function useTeacherAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -12,7 +11,7 @@ export function useTeacherAuth() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         const u = session?.user ?? null;
-        setUser(isTeacherUser(u) ? u : null);
+        setUser(u && !u.is_anonymous ? u : null);
       } catch (e) {
         console.error("Teacher auth init error:", e);
         setUser(null);
@@ -24,7 +23,7 @@ export function useTeacherAuth() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const u = session?.user ?? null;
-      setUser(isTeacherUser(u) ? u : null);
+      setUser(u && !u.is_anonymous ? u : null);
     });
 
     return () => subscription.unsubscribe();
@@ -40,12 +39,7 @@ export function useTeacherAuth() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          [AUTH_ROLE_KEY]: "teacher",
-          display_name: displayName ?? email.split("@")[0],
-        },
-      },
+      options: { data: { display_name: displayName ?? email.split("@")[0] } },
     });
     if (error) return { error: error.message };
     return { user: data.user };
@@ -55,7 +49,6 @@ export function useTeacherAuth() {
     await supabase.auth.signOut();
   }, []);
 
-  // Derive a friendly display name from the user record
   const displayName = user
     ? (user.user_metadata?.display_name as string | undefined) ??
       user.email?.split("@")[0] ??
