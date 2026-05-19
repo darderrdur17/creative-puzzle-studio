@@ -33,7 +33,7 @@ const Index = () => {
   const { user: teacherUser, displayName: teacherName, signOut: teacherSignOut, loading: teacherAuthLoading } = useTeacherAuth();
 
   // Anonymous auth (used for both teachers creating games and students joining)
-  const { userId, loading: authLoading, authError, retryAuth } = useAnonymousAuth();
+  const { userId, loading: authLoading, authError, retryAuth, ensureGuestSession } = useAnonymousAuth();
   const { createSession, joinSession, error, setError } = useGameSession(null, userId);
 
   const loading = authLoading || teacherAuthLoading;
@@ -54,18 +54,19 @@ const Index = () => {
   } = useBestIdeasAnswer(userId);
 
   const isStudent = !teacherUser;
-  const needsBestIdeasAnswer = isStudent && !bestIdeasLoading && !!userId && !hasBestIdeas;
-  const guestActionsBlocked = isStudent && (authLoading || bestIdeasLoading || !userId);
+  const needsBestIdeasAnswer = isStudent && !bestIdeasLoading && !hasBestIdeas;
+  const guestActionsBlocked = isStudent && authLoading;
 
   useEffect(() => {
-    if (mode === "join" && !bestIdeasLoading && userId && !hasBestIdeas) {
+    if (mode === "join" && !bestIdeasLoading && !hasBestIdeas) {
       setJoinStep("ideas");
     } else if (mode === "join" && !bestIdeasLoading) {
       setJoinStep("details");
     }
-  }, [mode, userId, hasBestIdeas, bestIdeasLoading]);
+  }, [mode, hasBestIdeas, bestIdeasLoading]);
 
   const handleBestIdeasSubmit = async (answer: string) => {
+    if (!userId) await ensureGuestSession();
     const ok = await saveBestIdeas(answer);
     if (ok && mode === "join") {
       setJoinStep("details");
@@ -86,7 +87,15 @@ const Index = () => {
     setSubmitting(true);
     setError(null);
     try {
-      const sess = await joinSession(gameCode.trim(), nickname.trim());
+      const guestId = userId ?? (await ensureGuestSession());
+      if (!guestId) {
+        setError(
+          authError ??
+            "Could not connect right now. Tap Try again or reload — students do not need an account."
+        );
+        return;
+      }
+      const sess = await joinSession(gameCode.trim(), nickname.trim(), guestId);
       if (!sess) return;
       if (sess.status === "playing") {
         navigate(`/game/${sess.id}`);
@@ -267,12 +276,6 @@ const Index = () => {
                 />
               )}
 
-              {isStudent && !bestIdeasLoading && !userId && authError && (
-                <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
-                  {authError} Sign-in is required before you can join a game.
-                </p>
-              )}
-
               {/* Student join — primary action */}
               <Button
                 size="lg"
@@ -451,21 +454,19 @@ const Index = () => {
                       onKeyDown={(e) => e.key === "Enter" && handleJoin()}
                     />
                   </div>
-                  {(error || authError) && (
-                    <div className="space-y-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                      <p>{error || authError}</p>
-                      {(!userId || authError) && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="border-destructive/50 text-destructive hover:bg-destructive/10"
-                          onClick={() => { setError(null); retryAuth(); }}
-                        >
-                          Sign in again
-                        </Button>
-                      )}
-                    </div>
+                  {error && (
+                    <motionField className="space-y-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                      <p role="alert">{error}</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="border-destructive/50 text-destructive hover:bg-destructive/10 min-h-[44px] touch-manipulation"
+                        onClick={() => { setError(null); void retryAuth(); }}
+                      >
+                        Try again
+                      </Button>
+                    </motionField>
                   )}
                   <div className="flex flex-wrap gap-2 pt-1">
                     <Button

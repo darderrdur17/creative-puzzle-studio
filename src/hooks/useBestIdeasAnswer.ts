@@ -37,7 +37,7 @@ export function useBestIdeasAnswer(userId: string | null) {
   const saveAnswer = useCallback(
     async (text: string): Promise<boolean> => {
       if (!userId) {
-        setError("Still connecting — please wait a moment and try again.");
+        setError("Still connecting — tap Continue again in a moment.");
         return false;
       }
 

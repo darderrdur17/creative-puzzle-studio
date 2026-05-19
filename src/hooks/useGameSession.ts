@@ -107,10 +107,11 @@ export function useGameSession(sessionId: string | null, userId: string | null) 
 
   // Join existing session by code — works for both lobby and in-progress games
   const joinSession = useCallback(
-    async (code: string, nickname: string) => {
-      if (!userId) {
+    async (code: string, nickname: string, activeUserId?: string) => {
+      const uid = activeUserId ?? userId;
+      if (!uid) {
         setError(
-          "Sign-in is required to join. Use \"Sign in again\" below to retry, or allow cookies and site data for this site and reload."
+          "Still connecting — tap \"Try again\" below, or reload the page. No account is needed to join as a student."
         );
         return null;
       }
@@ -131,7 +132,7 @@ export function useGameSession(sessionId: string | null, userId: string | null) 
 
       const { error: playerErr } = await supabase.from("game_players").insert({
         session_id: sess.id,
-        user_id: userId,
+        user_id: uid,
         nickname,
       });
 
