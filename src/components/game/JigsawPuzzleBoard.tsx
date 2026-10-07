@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { motion, AnimatePresence } from "framer-motion";
 import { CreativityStage, stageColors } from "@/lib/gameData";
-import puzzleBgImg from "@/assets/elephant-jewel-forest.png";
+import puzzleBgImg from "@/assets/elephant-jewel-forest.webp";
 import { SparkleEffect } from "./SparkleEffect";
 
 interface PuzzlePiece {
@@ -55,6 +55,48 @@ const jigsawClip =
   "polygon(8% 0%, 36% 0%, 38% 5%, 50% 8%, 62% 5%, 64% 0%, 92% 0%, 100% 8%, 100% 36%, 105% 38%, 108% 50%, 105% 62%, 100% 64%, 100% 92%, 92% 100%, 64% 100%, 62% 95%, 50% 92%, 38% 95%, 36% 100%, 8% 100%, 0% 92%, 0% 64%, -5% 62%, -8% 50%, -5% 38%, 0% 36%, 0% 8%)";
 
 const PHASE_LABELS = ["Stage Names", "Quotes"] as const;
+
+interface StageSlotDroppablesProps {
+  stageId: string;
+  stageSlot?: PuzzlePiece;
+  quoteSlot?: PuzzlePiece;
+  phase: 1 | 2;
+  children: (droppables: {
+    setStageRef: ReturnType<typeof useDroppable>["setNodeRef"];
+    isStageOver: boolean;
+    setQuoteRef: ReturnType<typeof useDroppable>["setNodeRef"];
+    isQuoteOver: boolean;
+  }) => React.ReactNode;
+}
+
+/**
+ * Registers the droppable targets for a single stage's stage-slot and quote-slot.
+ *
+ * Extracted into its own component so `useDroppable` runs at the top level of a
+ * component. Calling it inside the parent's `stages.map()` would violate the
+ * Rules of Hooks, since the number of hook calls would vary with the number of
+ * stages. The slot markup itself stays in the parent and is passed as children.
+ */
+function StageSlotDroppables({
+  stageId,
+  stageSlot,
+  quoteSlot,
+  phase,
+  children,
+}: StageSlotDroppablesProps) {
+  // Droppable ids map 1:1 to slot ids used in puzzlePieces
+  const { setNodeRef: setStageRef, isOver: isStageOver } = useDroppable({
+    id: stageSlot?.id ?? `${stageId}-stage-slot`,
+    disabled: !stageSlot,
+  });
+
+  const { setNodeRef: setQuoteRef, isOver: isQuoteOver } = useDroppable({
+    id: quoteSlot?.id ?? `${stageId}-quote-slot`,
+    disabled: !(phase === 2 && quoteSlot),
+  });
+
+  return <>{children({ setStageRef, isStageOver, setQuoteRef, isQuoteOver })}</>;
+}
 
 export function JigsawPuzzleBoard({
   phase,
@@ -182,28 +224,16 @@ export function JigsawPuzzleBoard({
 
             if (!pos) return null;
 
-            // Droppable ids map 1:1 to slot ids used in puzzlePieces
-            const stageDroppableId = stageSlot?.id;
-            const quoteDroppableId = quoteSlot?.id;
-
-            const {
-              setNodeRef: setStageRef,
-              isOver: isStageOver,
-            } = useDroppable({
-              id: stageDroppableId ?? `${stage.id}-stage-slot`,
-              disabled: !stageSlot,
-            });
-
-            const {
-              setNodeRef: setQuoteRef,
-              isOver: isQuoteOver,
-            } = useDroppable({
-              id: quoteDroppableId ?? `${stage.id}-quote-slot`,
-              disabled: !(phase === 2 && quoteSlot),
-            });
-
             return (
-              <div key={stage.id}>
+              <StageSlotDroppables
+                key={stage.id}
+                stageId={stage.id}
+                stageSlot={stageSlot}
+                quoteSlot={quoteSlot}
+                phase={phase}
+              >
+                {({ setStageRef, isStageOver, setQuoteRef, isQuoteOver }) => (
+              <div>
                 {/* ── Stage slot ── */}
                 {stageSlot && (
                   <>
@@ -320,6 +350,8 @@ export function JigsawPuzzleBoard({
                   </>
                 )}
               </div>
+                )}
+              </StageSlotDroppables>
             );
           })}
         </div>

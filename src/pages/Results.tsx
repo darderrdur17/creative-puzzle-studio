@@ -9,7 +9,7 @@ import { useGameSession } from "@/hooks/useGameSession";
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import confetti from "canvas-confetti";
-import elephantPuzzleImage from "@/assets/elephant-jewel-forest.png";
+import elephantPuzzleImage from "@/assets/elephant-jewel-forest.webp";
 
 const DIFFICULTY_LABELS: Record<string, string> = {
   easy: "Easy",

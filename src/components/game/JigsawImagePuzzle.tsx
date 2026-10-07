@@ -1,21 +1,28 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronUp, ChevronDown, Puzzle, Quote } from "lucide-react";
-import elephantImg from "@/assets/elephant-jewel-forest.png";
+import elephantImg from "@/assets/elephant-jewel-forest.webp";
 import type { CreativityStage } from "@/lib/gameData";
 import {
   getLevelFromDifficulty,
   getLevelGridConfig,
   getFillerQuotePool,
-  type LevelGridConfig,
 } from "@/lib/gameData";
 
 const KEY_ROW = 0;
 
-export function getGridConfig(difficulty: string): LevelGridConfig {
-  const level = getLevelFromDifficulty(difficulty);
-  return getLevelGridConfig(level);
-}
+/**
+ * Offsets for the radial sparkle burst emitted when a piece snaps home.
+ * Deterministic, purely decorative.
+ */
+const PLACEMENT_BURST = [
+  { x: -26, y: -22 },
+  { x: 26, y: -22 },
+  { x: -32, y: 2 },
+  { x: 32, y: 2 },
+  { x: -20, y: 24 },
+  { x: 20, y: 24 },
+];
 
 export interface JigsawPiece {
   id: number;
@@ -314,6 +321,8 @@ export function JigsawImagePuzzle({
       quotesPlaced,
       quotesToPlace,
       fixedSlots,
+      stageOrder,
+      stages,
       onPiecePlaced,
       onIncorrect,
       onCompleted,
@@ -342,20 +351,20 @@ export function JigsawImagePuzzle({
       {/* On mobile: tray first (above board) so quotes are visible without scrolling; desktop: board left, tray right */}
       <div className="flex-1 flex flex-col items-center order-2 lg:order-1">
         <div
-          className="jigsaw-board relative w-full rounded-xl border-2 border-explorer-gold/40 shadow-xl overflow-hidden bg-explorer-dark/5 touch-manipulation select-none min-h-[200px]"
+          className="jigsaw-board relative w-full rounded-xl border-2 border-explorer-gold/60 shadow-lg ring-1 ring-explorer-dark/10 overflow-hidden bg-explorer-dark/[0.06] bg-gradient-to-b from-white/10 to-transparent touch-manipulation select-none min-h-[200px]"
           style={{ maxWidth: 640, aspectRatio: `${cols}/${rows}` }}
         >
           {/* Faded background elephant: shows the full puzzle image without giving away individual pieces */}
           <img
             src={elephantImg}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover object-center rounded-xl pointer-events-none opacity-[0.13]"
+            className="absolute inset-0 w-full h-full object-cover object-center rounded-xl pointer-events-none opacity-[0.18] dark:opacity-[0.12]"
             draggable={false}
             decoding="async"
             aria-hidden
           />
 
-          <div className="absolute top-1 left-1 z-10 flex flex-col gap-1 text-[9px] font-semibold text-white/80 drop-shadow-sm pointer-events-none">
+          <div className="absolute top-1 left-1 z-10 flex flex-col gap-1 text-[10px] font-semibold text-white/80 drop-shadow-sm pointer-events-none">
             <span>{phase === 1 ? "1. Main keys" : "✓ Main keys"}</span>
             <span>
             {phase === 2 ? "2. Quotes" : "Quotes"}
@@ -422,10 +431,10 @@ export function JigsawImagePuzzle({
                   {!isPlaced && !fixed && (
                     <div
                       className={[
-                        "absolute inset-0 border transition-all duration-200 rounded-sm",
+                        "absolute inset-0 border transition-all duration-200 rounded-[4px]",
                         active && hasSelection
-                          ? "border-explorer-gold/50 bg-explorer-gold/8"
-                          : "border-white/15 bg-black/5",
+                          ? "border-explorer-gold-ink/85 bg-explorer-gold/[0.12]"
+                          : "border-explorer-dark/55 bg-explorer-dark/[0.06]",
                       ].join(" ")}
                     />
                   )}
@@ -436,7 +445,7 @@ export function JigsawImagePuzzle({
                         className={[
                           r === KEY_ROW ? "line-clamp-1" : "line-clamp-none",
                           "text-white pointer-events-none block",
-                          "text-[8px] min-[380px]:text-[9px] sm:text-[10px]",
+                          "text-[8px] min-[380px]:text-[11px] sm:text-xs",
                           r === KEY_ROW ? "key-text" : "quote-text",
                         ].join(" ")}
                       >
@@ -463,12 +472,24 @@ export function JigsawImagePuzzle({
                   )}
 
                   {isPlaced && !fixed && wasJustPlaced && (
-                    <motion.div
-                      initial={{ opacity: 0.6, scale: 1.15 }}
-                      animate={{ opacity: 0, scale: 1.4 }}
-                      transition={{ duration: 0.6 }}
-                      className="absolute inset-0 rounded-sm border-2 border-explorer-gold pointer-events-none"
-                    />
+                    <>
+                      <motion.div
+                        initial={{ opacity: 0.6, scale: 1.15 }}
+                        animate={{ opacity: 0, scale: 1.4 }}
+                        transition={{ duration: 0.6 }}
+                        className="absolute inset-0 rounded-sm border-2 border-explorer-gold pointer-events-none"
+                      />
+                      {/* Radial sparkle burst on a correct snap */}
+                      {PLACEMENT_BURST.map((b, bi) => (
+                        <motion.span
+                          key={bi}
+                          className="pointer-events-none absolute left-1/2 top-1/2 h-1 w-1 rounded-full bg-secondary"
+                          initial={{ opacity: 1, x: 0, y: 0, scale: 0.6 }}
+                          animate={{ opacity: 0, x: b.x, y: b.y, scale: 1.6 }}
+                          transition={{ duration: 0.6, ease: "easeOut" }}
+                        />
+                      ))}
+                    </>
                   )}
                 </motion.button>
               );
@@ -489,7 +510,7 @@ export function JigsawImagePuzzle({
                   initial={{ scale: 0.8, y: 20 }}
                   animate={{ scale: 1, y: 0 }}
                   transition={{ type: "spring", stiffness: 120, damping: 14 }}
-                  className="text-center px-6 py-5 rounded-2xl glass shadow-glow-gold"
+                  className="text-center px-6 py-5 rounded-2xl glass-dark shadow-glow-gold"
                 >
                   <p className="font-display text-xl sm:text-2xl font-bold text-white drop-shadow-lg mb-1">
                     Main keys complete!
@@ -518,7 +539,7 @@ export function JigsawImagePuzzle({
                     damping: 14,
                     delay: 0.2,
                   }}
-                  className="text-center px-6 py-5 rounded-2xl glass shadow-glow-gold"
+                  className="text-center px-6 py-5 rounded-2xl glass-dark shadow-glow-gold"
                 >
                   <motion.div
                     animate={{ rotate: [0, -8, 8, -4, 0] }}
@@ -544,17 +565,19 @@ export function JigsawImagePuzzle({
             <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground">
               {phase === 1 ? "Main keys" : "Quotes"} · {placedCount}/{totalToPlace}
             </span>
-            <span className="text-xs font-bold text-explorer-gold">
+            <span className="text-xs font-bold text-explorer-gold-ink">
               {placedCount}/{totalToPlace}
             </span>
           </div>
           <div className="h-2 rounded-full bg-muted overflow-hidden">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-explorer-gold to-explorer-ocean"
+              className="relative h-full overflow-hidden rounded-full bg-gradient-to-r from-explorer-gold to-explorer-ocean"
               initial={false}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.5, ease: "easeOut" }}
-            />
+            >
+              <span className="progress-shine" />
+            </motion.div>
           </div>
         </div>
       </div>
@@ -567,15 +590,15 @@ export function JigsawImagePuzzle({
           aria-controls="jigsaw-tray-content"
           className={[
             "jigsaw-tray-toggle w-full flex items-center justify-between p-3 rounded-xl transition-all duration-200 min-h-[44px]",
-            "bg-gradient-to-r from-explorer-gold/15 to-explorer-parchment border border-explorer-gold/25",
+            "bg-gradient-to-r from-explorer-gold/20 to-explorer-parchment border border-explorer-gold/35",
             "lg:bg-transparent lg:border-none lg:p-0",
           ].join(" ")}
         >
           <h3 className="flex items-center gap-2 font-display text-sm font-bold sm:text-base">
             {phase === 1 ? (
-              <Puzzle className="h-5 w-5 text-explorer-gold" />
+              <Puzzle className="h-5 w-5 text-explorer-gold-ink" />
             ) : (
-              <Quote className="h-5 w-5 text-explorer-gold" />
+              <Quote className="h-5 w-5 text-explorer-gold-ink" />
             )}
             {phase === 1 ? "Main keys" : "Quotes"}
             <span className="ml-2 rounded-full bg-explorer-gold/20 px-2 py-0.5 text-[10px] font-semibold text-explorer-dark sm:text-xs">
@@ -647,7 +670,7 @@ export function JigsawImagePuzzle({
                           <span
                             className={[
                               "text-white pointer-events-none",
-                              "text-[10px] sm:text-[10px]",
+                              "text-[11px] sm:text-xs",
                               piece.type === "key" ? "key-text line-clamp-1" : "quote-text line-clamp-none",
                             ].join(" ")}
                           >
@@ -658,7 +681,7 @@ export function JigsawImagePuzzle({
                           <motion.div
                             initial={{ opacity: 0, scale: 0 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-explorer-gold text-[9px] text-white shadow-sm font-bold z-10"
+                            className="absolute -top-1.5 -right-1.5 lg:top-1 lg:right-1 flex h-5 w-5 items-center justify-center rounded-full bg-explorer-gold text-[9px] text-secondary-foreground shadow-sm font-bold z-10"
                           >
                             ✓
                           </motion.div>

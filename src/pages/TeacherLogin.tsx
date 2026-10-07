@@ -247,8 +247,14 @@ export default function TeacherLogin() {
                         <button
                           type="button"
                           onClick={() => setShowPassword((v) => !v)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          tabIndex={-1}
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                          aria-pressed={showPassword}
+                          /* 44x44 hit area per TESTING_GUIDE.md. The icon stays
+                             h-4 w-4 and the button is centred on the input, so the
+                             extra hit area is invisible. Was 16x16 with no
+                             accessible name and `tabIndex={-1}`, which also made it
+                             unreachable by keyboard (WCAG 2.1.1). */
+                          className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
@@ -342,8 +348,14 @@ export default function TeacherLogin() {
                         <button
                           type="button"
                           onClick={() => setShowPassword((v) => !v)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          tabIndex={-1}
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                          aria-pressed={showPassword}
+                          /* 44x44 hit area per TESTING_GUIDE.md. The icon stays
+                             h-4 w-4 and the button is centred on the input, so the
+                             extra hit area is invisible. Was 16x16 with no
+                             accessible name and `tabIndex={-1}`, which also made it
+                             unreachable by keyboard (WCAG 2.1.1). */
+                          className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
@@ -380,6 +392,7 @@ export default function TeacherLogin() {
           Students don't need an account —{" "}
           <button
             type="button"
+            data-inline
             className="underline hover:text-foreground"
             onClick={() => navigate("/")}
           >

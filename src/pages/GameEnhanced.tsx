@@ -10,8 +10,9 @@ import { useGameSession } from "@/hooks/useGameSession";
 import { DIFFICULTY_CONFIG, calculateJigsawScore, getRandomizedStagesForPlayer } from "@/lib/gameData";
 import { useBestIdeasAnswer } from "@/hooks/useBestIdeasAnswer";
 import { playCorrectSound, playIncorrectSound, playCelebrationSound } from "@/lib/audioFeedback";
-import elephantPuzzleImage from "@/assets/elephant-jewel-forest.png";
-import { JigsawImagePuzzle, getGridConfig } from "@/components/game/JigsawImagePuzzle";
+import elephantPuzzleImage from "@/assets/elephant-jewel-forest.webp";
+import { JigsawImagePuzzle } from "@/components/game/JigsawImagePuzzle";
+import { getGridConfig } from "@/lib/jigsawGrid";
 import { CompletionOverlay } from "@/components/game/CompletionOverlay";
 import { InstructionsModal } from "@/components/InstructionsModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -218,15 +219,21 @@ const GameEnhanced = () => {
 
   return (
     <div className="relative min-h-screen w-full bg-explorer overflow-x-hidden overflow-y-auto">
-      {/* Ambient background blobs */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-explorer-gold/10 rounded-full blur-3xl opacity-30" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-explorer-ocean/10 rounded-full blur-3xl opacity-30" />
-        <div className="absolute top-1/2 left-0 w-64 h-64 bg-brand-purple/5 rounded-full blur-3xl opacity-20" />
+      {/* Ambient background blobs — slow drift keeps the surface alive */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="animate-aurora absolute top-0 left-1/4 w-96 h-96 bg-secondary/[0.12] rounded-full blur-3xl opacity-40" />
+        <div
+          className="animate-aurora absolute bottom-0 right-1/4 w-96 h-96 bg-accent/[0.12] rounded-full blur-3xl opacity-40"
+          style={{ animationDelay: "-11s", animationDuration: "34s" }}
+        />
+        <div
+          className="animate-float-drift absolute top-1/2 left-0 w-64 h-64 bg-primary/[0.12] rounded-full blur-3xl opacity-30"
+          style={{ animationDelay: "-3s" }}
+        />
       </div>
 
       {/* ───── Header ───── */}
-      <header className="relative z-10 border-b border-explorer-gold/20 bg-background/85 backdrop-blur-md safe-area-top">
+      <header className="relative z-10 border-b border-explorer-gold/30 bg-background/85 backdrop-blur-md safe-area-top">
         <div className="flex items-center justify-between px-3 py-2.5 sm:px-6 sm:py-3">
           {/* Left: title + hint */}
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -252,7 +259,14 @@ const GameEnhanced = () => {
                 Lv.{xpLevel} · {xp} XP
               </div>
               <div className="xp-bar w-16">
-                <motion.div className="xp-fill" animate={{ width: `${xpProgress * 100}%` }} transition={{ duration: 0.5 }} />
+                <motion.div
+                  className="xp-fill bg-[length:200%_100%]"
+                  animate={{ width: `${xpProgress * 100}%`, backgroundPosition: ["0% 50%", "200% 50%"] }}
+                  transition={{
+                    width: { duration: 0.5 },
+                    backgroundPosition: { duration: 2.6, repeat: Infinity, ease: "linear" },
+                  }}
+                />
               </div>
             </div>
 
@@ -277,8 +291,8 @@ const GameEnhanced = () => {
             </div>
 
             {/* Progress pill (desktop) */}
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-explorer-gold/15">
-              <MapPin className="h-3.5 w-3.5 text-explorer-gold" />
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-explorer-gold/20">
+              <MapPin className="h-3.5 w-3.5 text-explorer-gold-ink" />
               <span className="text-xs font-semibold text-explorer-dark">{placedCount}/{totalPieces}</span>
             </div>
 
@@ -297,7 +311,7 @@ const GameEnhanced = () => {
               <Star className="h-3 w-3 text-brand-purple" />
               {xp} XP · Lv.{xpLevel}
             </div>
-            <span className="text-xs font-bold text-explorer-gold">{placedCount}/{totalPieces}</span>
+            <span className="text-xs font-bold text-explorer-gold-ink">{placedCount}/{totalPieces}</span>
           </div>
           <Progress value={(placedCount / totalPieces) * 100} className="h-1.5" />
         </div>
@@ -337,10 +351,20 @@ const GameEnhanced = () => {
             exit={{ opacity: 0, scale: 0.7 }}
             className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none"
           >
-            <div className="flex items-center gap-2 bg-gradient-to-r from-brand-purple to-brand-orange text-white px-6 py-3 rounded-full shadow-glow-purple font-display text-lg font-bold">
-              <Zap className="h-5 w-5" />
+            <motion.div
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut" }}
+              className="shine-hover flex items-center gap-2 bg-gradient-to-r from-primary to-accent text-white px-6 py-3 rounded-full shadow-glow-violet font-display text-lg font-bold"
+            >
+              <motion.span
+                animate={{ rotate: [0, -20, 20, 0], scale: [1, 1.15, 1] }}
+                transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+                className="inline-flex"
+              >
+                <Zap className="h-5 w-5" />
+              </motion.span>
               {comboStreak}x Combo! +{5 * (comboStreak - 1)} XP
-            </div>
+            </motion.div>
           </motion.div>
         )}
 

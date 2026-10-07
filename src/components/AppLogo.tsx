@@ -19,20 +19,24 @@ const iconSizes = {
 };
 
 /**
- * App logo: teal/mint gradient squircle with white outline puzzle piece (slightly rotated).
+ * App logo: violet→teal token gradient squircle with white outline puzzle piece (slightly rotated).
  * Matches the Creative Puzzle Studio branding.
  */
 export function AppLogo({ size = "lg", className = "" }: AppLogoProps) {
   return (
     <div
-      className={`flex items-center justify-center shadow-lg shadow-teal-900/20 ${sizeClasses[size]} ${className}`}
+      className={`animate-gradient-pan relative flex items-center justify-center shadow-lg shadow-primary/25 ${sizeClasses[size]} ${className}`}
       style={{
-        background: "linear-gradient(to bottom, hsl(160, 40%, 78%), hsl(160, 45%, 58%))",
+        backgroundImage:
+          "linear-gradient(160deg, hsl(var(--primary)), hsl(var(--accent)) 50%, hsl(var(--primary)))",
+        backgroundSize: "220% 220%",
       }}
       aria-hidden
     >
+      {/* Inner gloss — keeps the squircle from reading flat */}
+      <span className="pointer-events-none absolute inset-0 rounded-[inherit] bg-gradient-to-b from-white/25 to-transparent" />
       <Puzzle
-        className={`${iconSizes[size]} text-white shrink-0`}
+        className={`${iconSizes[size]} relative shrink-0 text-white drop-shadow-sm`}
         strokeWidth={2.25}
         style={{ transform: "rotate(8deg)" }}
       />

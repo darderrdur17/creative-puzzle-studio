@@ -1,10 +1,20 @@
 // Web Audio API sound effects - no external files needed
 
-const audioCtx = () => {
-  if (!(window as any).__gameAudioCtx) {
-    (window as any).__gameAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+declare global {
+  interface Window {
+    /** Lazily-created AudioContext, cached so repeated sounds reuse one context. */
+    __gameAudioCtx?: AudioContext;
+    /** Older Safari only exposes the vendor-prefixed constructor. */
+    webkitAudioContext?: typeof AudioContext;
   }
-  return (window as any).__gameAudioCtx as AudioContext;
+}
+
+const audioCtx = (): AudioContext => {
+  if (!window.__gameAudioCtx) {
+    const AudioCtor = window.AudioContext ?? window.webkitAudioContext;
+    window.__gameAudioCtx = new AudioCtor();
+  }
+  return window.__gameAudioCtx;
 };
 
 export function playCorrectSound() {

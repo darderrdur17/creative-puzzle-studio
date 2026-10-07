@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
   darkMode: ["class"],
@@ -28,11 +29,11 @@ export default {
             300: "#d8b4fe",
             400: "#c084fc",
             500: "#a855f7",
-            600: "#9333ea",
+            600: "hsl(var(--primary))",
             700: "#7e22ce",
             800: "#6b21a8",
             900: "#581c87",
-            DEFAULT: "#9333ea",
+            DEFAULT: "hsl(var(--primary))",
           },
           orange: {
             50:  "#fff7ed",
@@ -45,17 +46,18 @@ export default {
             700: "#c2410c",
             800: "#9a3412",
             900: "#7c2d12",
-            DEFAULT: "#f97316",
+            DEFAULT: "hsl(var(--secondary))",
           },
         },
         // World-specific palettes
         explorer: {
-          parchment: "#FEF3C7",
-          gold:      "#CA8A04",
-          ocean:     "#0284C7",
-          forest:    "#15803D",
-          light:     "#FEF9EC",
-          dark:      "#92400E",
+          parchment: "hsl(var(--parchment))",
+          gold:      "hsl(var(--gold))",
+          "gold-ink":"hsl(var(--gold-ink))",
+          ocean:     "hsl(var(--ocean))",
+          forest:    "hsl(var(--success))",
+          light:     "hsl(var(--parchment-light))",
+          dark:      "hsl(var(--ink))",
         },
         alchemist: {
           purple: "#6B21A8",
@@ -88,6 +90,12 @@ export default {
           evaluation:   "hsl(var(--stage-evaluation))",
           elaboration:  "hsl(var(--stage-elaboration))",
         },
+        // Flat stage-chip foregrounds (keep the `stage` group above flat too).
+        // Only the four stages rendered as chips in the UI have a pairing.
+        "stage-fg-preparation":  "hsl(var(--stage-preparation-foreground))",
+        "stage-fg-incubation":   "hsl(var(--stage-incubation-foreground))",
+        "stage-fg-illumination": "hsl(var(--stage-illumination-foreground))",
+        "stage-fg-verification": "hsl(var(--stage-verification-foreground))",
         border:     "hsl(var(--border))",
         input:      "hsl(var(--input))",
         ring:       "hsl(var(--ring))",
@@ -133,13 +141,13 @@ export default {
         },
       },
       boxShadow: {
-        "glow-purple": "0 0 20px rgba(147, 51, 234, 0.4), 0 0 40px rgba(147, 51, 234, 0.2)",
+        "glow-purple": "var(--shadow-glow-violet)",
         "glow-orange": "0 0 20px rgba(249, 115, 22, 0.4), 0 0 40px rgba(249, 115, 22, 0.2)",
         "glow-green":  "0 0 20px rgba(16, 185, 129, 0.4), 0 0 40px rgba(16, 185, 129, 0.2)",
         "glow-blue":   "0 0 20px rgba(14, 165, 233, 0.4), 0 0 40px rgba(14, 165, 233, 0.2)",
-        "glow-gold":   "0 0 20px rgba(202, 138, 4, 0.5),  0 0 40px rgba(202, 138, 4, 0.25)",
-        "card":        "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)",
-        "card-hover":  "0 10px 15px -3px rgba(0,0,0,0.15), 0 4px 6px -2px rgba(0,0,0,0.08)",
+        "glow-gold":   "var(--shadow-glow-gold)",
+        "card":        "var(--shadow-sm)",
+        "card-hover":  "var(--shadow-md)",
         "inner-glow":  "inset 0 0 20px rgba(147, 51, 234, 0.15)",
       },
       borderRadius: {
@@ -220,5 +228,5 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 } satisfies Config;

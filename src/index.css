@@ -14,46 +14,82 @@
     touch-action: manipulation;
   }
   :root {
-    --background: 45 30% 97%;
-    --foreground: 240 20% 15%;
+    --background: 268 32% 98%;
+    --foreground: 258 28% 16%;
 
     --card: 0 0% 100%;
-    --card-foreground: 240 20% 15%;
+    --card-foreground: 258 28% 16%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 20% 15%;
+    --popover-foreground: 258 28% 16%;
 
-    --primary: 174 60% 40%;
+    --primary: 262 72% 54%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 35 85% 65%;
-    --secondary-foreground: 240 20% 15%;
+    --secondary: 43 90% 52%;
+    --secondary-foreground: 258 35% 16%;
 
-    --muted: 45 20% 92%;
-    --muted-foreground: 240 10% 45%;
+    --muted: 268 24% 94%;
+    --muted-foreground: 260 12% 46%;
 
-    --accent: 280 55% 60%;
+    --accent: 174 70% 42%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 145 60% 42%;
+    --success: 145 62% 32%;
     --success-foreground: 0 0% 100%;
 
-    --border: 45 15% 85%;
-    --input: 45 15% 85%;
-    --ring: 174 60% 40%;
+    --border: 268 22% 88%;
+    --input: 268 22% 88%;
+    --ring: 262 72% 54%;
+
+    /* Artwork-derived tokens — back the explorer-* remap */
+    --gold: 43 88% 46%;
+    --gold-ink: 43 88% 29%;
+    --ocean: 190 82% 42%;
+    --parchment: 268 40% 97%;
+    --parchment-light: 268 45% 99%;
+    --ink: 258 35% 20%;
+    --board-surface: 268 35% 96%;
+    --board-cell-border: 258 30% 30%;
+    --board-cell-fill: 258 30% 30%;
 
     --radius: 0.75rem;
 
+    /* Radius scale */
+    --radius-sm: 0.5rem;
+    --radius-md: 0.625rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.25rem;
+    --radius-3xl: 1.5rem;
+    --radius-pill: 9999px;
+
+    /* Shadow scale */
+    --shadow-xs: 0 1px 2px hsl(258 30% 20% / 0.06);
+    --shadow-sm: 0 1px 3px hsl(258 30% 20% / 0.10), 0 1px 2px hsl(258 30% 20% / 0.06);
+    --shadow-md: 0 4px 10px -2px hsl(258 30% 20% / 0.14);
+    --shadow-lg: 0 12px 24px -6px hsl(258 30% 20% / 0.18);
+    --shadow-xl: 0 20px 40px -12px hsl(258 30% 20% / 0.24);
+    --shadow-glow-gold: 0 0 20px hsl(43 90% 55% / 0.45);
+    --shadow-glow-violet: 0 0 22px hsl(262 72% 55% / 0.40);
+
     /* Creativity stage colors */
-    --stage-preparation: 200 70% 55%;
-    --stage-incubation: 280 55% 60%;
-    --stage-illumination: 45 90% 55%;
-    --stage-verification: 145 55% 42%;
-    --stage-evaluation: 0 70% 60%;
-    --stage-elaboration: 145 60% 42%;
+    --stage-preparation: 205 85% 52%;
+    --stage-incubation: 262 72% 58%;
+    --stage-illumination: 43 92% 55%;
+    --stage-verification: 150 62% 40%;
+    --stage-evaluation: 350 75% 58%;
+    --stage-elaboration: 150 62% 40%;
+
+    /* Stage chip foregrounds — chip text vs that stage's own bg (≥4.5:1).
+       Only the four stages rendered as chips (Index.tsx) need a pairing. */
+    --stage-preparation-foreground: 258 50% 5%;
+    --stage-incubation-foreground: 0 0% 100%;
+    --stage-illumination-foreground: 258 50% 5%;
+    --stage-verification-foreground: 258 50% 5%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -66,43 +102,65 @@
   }
 
   .dark {
-    --background: 240 15% 10%;
-    --foreground: 45 20% 95%;
+    --background: 258 30% 10%;
+    --foreground: 268 20% 96%;
 
-    --card: 240 15% 14%;
-    --card-foreground: 45 20% 95%;
+    --card: 258 26% 14%;
+    --card-foreground: 268 20% 96%;
 
-    --popover: 240 15% 14%;
-    --popover-foreground: 45 20% 95%;
+    --popover: 258 26% 14%;
+    --popover-foreground: 268 20% 96%;
 
-    --primary: 174 60% 45%;
-    --primary-foreground: 240 20% 10%;
+    --primary: 262 70% 65%;
+    --primary-foreground: 258 35% 10%;
 
-    --secondary: 35 70% 50%;
-    --secondary-foreground: 240 20% 10%;
+    --secondary: 43 88% 58%;
+    --secondary-foreground: 258 35% 10%;
 
-    --muted: 240 10% 20%;
-    --muted-foreground: 45 10% 60%;
+    --muted: 258 20% 20%;
+    --muted-foreground: 265 14% 66%;
 
-    --accent: 280 55% 55%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 174 65% 48%;
+    --accent-foreground: 258 35% 10%;
 
-    --destructive: 0 62.8% 40%;
+    --destructive: 0 62% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 145 55% 40%;
-    --success-foreground: 0 0% 100%;
+    --success: 150 58% 46%;
+    --success-foreground: 258 35% 10%;
 
-    --border: 240 10% 22%;
-    --input: 240 10% 22%;
-    --ring: 174 60% 45%;
+    --border: 258 18% 24%;
+    --input: 258 18% 24%;
+    --ring: 262 70% 62%;
 
-    --stage-preparation: 200 65% 50%;
-    --stage-incubation: 280 50% 55%;
-    --stage-illumination: 45 80% 50%;
-    --stage-verification: 145 55% 40%;
-    --stage-evaluation: 0 65% 55%;
-    --stage-elaboration: 145 55% 40%;
+    /* Artwork-derived tokens (dark mirror) */
+    --gold: 43 92% 58%;
+    --gold-ink: 43 92% 58%;
+    --ocean: 190 78% 52%;
+    --parchment: 258 26% 16%;
+    --parchment-light: 258 24% 20%;
+    --ink: 268 20% 92%;
+    --board-surface: 258 28% 13%;
+    --board-cell-border: 268 25% 80%;
+    --board-cell-fill: 268 25% 80%;
+
+    /* Dark shadows read better as pure black at higher alpha */
+    --shadow-lg: 0 12px 24px -6px hsl(0 0% 0% / 0.45);
+    --shadow-xl: 0 20px 40px -12px hsl(0 0% 0% / 0.60);
+
+    --stage-preparation: 205 78% 58%;
+    --stage-incubation: 262 68% 64%;
+    --stage-illumination: 43 88% 58%;
+    --stage-verification: 150 58% 46%;
+    --stage-evaluation: 350 70% 62%;
+    --stage-elaboration: 150 58% 46%;
+
+    /* Stage chip foregrounds — chip text vs that stage's own bg (≥4.5:1).
+       Only the four stages rendered as chips (Index.tsx) need a pairing. */
+    --stage-preparation-foreground: 258 50% 5%;
+    --stage-incubation-foreground: 258 50% 5%;
+    --stage-illumination-foreground: 258 50% 5%;
+    --stage-verification-foreground: 258 50% 5%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -255,7 +313,15 @@ html {
 
   /* Glassmorphism */
   .glass {
-    @apply bg-white/20 backdrop-blur-md border border-white/30 shadow-lg;
+    background: hsl(var(--card) / 0.55);
+    border: 1px solid hsl(var(--border) / 0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: var(--shadow-lg);
+  }
+  .dark .glass {
+    background: hsl(0 0% 100% / 0.10);
+    border-color: hsl(0 0% 100% / 0.16);
   }
   .glass-dark {
     @apply bg-black/25 backdrop-blur-md border border-white/10 shadow-lg;
@@ -325,9 +391,12 @@ html {
            p-3 shadow-sm transition-all duration-200 hover:shadow-card-hover;
   }
 
-  /* Explorer world background */
+  /* Explorer world background — tokenised so it flips with the theme */
   .bg-explorer {
-    background: linear-gradient(135deg, #FEF3C7 0%, #FEF9EC 40%, #E0F2FE 100%);
+    background: linear-gradient(135deg, hsl(var(--parchment)) 0%, hsl(var(--board-surface)) 45%, hsl(var(--parchment-light)) 100%);
+  }
+  .dark .bg-explorer {
+    background: linear-gradient(135deg, hsl(258 30% 10%) 0%, hsl(262 28% 14%) 50%, hsl(258 26% 16%) 100%);
   }
 
   /* Parchment texture overlay */
@@ -383,7 +452,6 @@ html {
 
 /* Statement/detail text bar on each puzzle piece (tray + board) */
 .jigsaw-piece-statement {
-  min-height: 0; /* Allow flex child to shrink and scroll when content overflows */
   /* Solid fallback for browsers without backdrop-filter */
   background: linear-gradient(
     to top,
@@ -394,10 +462,12 @@ html {
   /* Remove blur so puzzle art stays sharp under the text */
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  padding: 0.35rem 0.5rem;
-  min-height: 2rem;
+  padding: 0.4rem 0.55rem;
+  min-height: 2.25rem;
   display: flex;
-  align-items: center;
+  /* `safe` degrades to flex-start once content overflows, so the first line
+     stays reachable when the statement bar scrolls. */
+  align-items: safe center;
   justify-content: center;
   text-align: center;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
@@ -411,7 +481,7 @@ html {
 @media (max-width: 639px) {
   .jigsaw-piece-statement {
     padding: 0.4rem 0.5rem;
-    min-height: 2.25rem;
+    min-height: 2.5rem;
   }
 }
 
@@ -421,7 +491,7 @@ html {
   font-family: Georgia, "Times New Roman", serif;
   font-style: italic;
   letter-spacing: 0.01em;
-  line-height: 1.35;
+  line-height: 1.4;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 1px rgba(0, 0, 0, 0.8);
   -webkit-font-smoothing: antialiased;
   /* Ensure quotes are never truncated — display in full */
@@ -474,10 +544,10 @@ html {
   .jigsaw-tray-piece:not([aria-pressed="true"]):hover {
     box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15), 0 4px 6px -2px rgba(0,0,0,0.08);
     transform: scale(1.03);
-    border-color: hsl(43 96% 40% / 0.6);
+    border-color: hsl(var(--gold) / 0.7);
   }
   .jigsaw-tray-toggle:hover {
-    background: linear-gradient(to right, hsl(43 96% 40% / 0.25), hsl(45 90% 97%));
+    background: linear-gradient(to right, hsl(var(--gold) / 0.25), hsl(var(--parchment-light)));
   }
 }
 
@@ -503,6 +573,229 @@ html {
 
 .animate-piece-snap {
   animation: piece-snap 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Motion & polish vocabulary
+   Shared, token-driven animation primitives. Everything here is
+   automatically neutralised by the prefers-reduced-motion block at
+   the end of this file.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Slow ambient drift — used for the aurora mesh and background blobs */
+@keyframes aurora-drift {
+  0%   { transform: translate3d(-4%, -2%, 0) scale(1.06); }
+  50%  { transform: translate3d(4%, 3%, 0) scale(1.14); }
+  100% { transform: translate3d(-4%, -2%, 0) scale(1.06); }
+}
+
+/* Very slow scale/drift so the elephant artwork feels alive but calm */
+@keyframes ken-burns {
+  0%   { transform: scale(1.06) translate3d(0, 0, 0); }
+  100% { transform: scale(1.15) translate3d(-1%, -1.5%, 0); }
+}
+
+/* Gentle bob for the floating stage badges */
+@keyframes float-drift {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-14px) rotate(-1.5deg); }
+}
+
+/* Diagonal light sweep across buttons/cards on hover */
+@keyframes shine-sweep {
+  0%   { transform: translateX(-140%) skewX(-18deg); }
+  100% { transform: translateX(240%) skewX(-18deg); }
+}
+
+/* Animated gradient pan — hero title + progress fills */
+@keyframes gradient-pan {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+
+/* Radial particle burst emitted when a piece snaps into place */
+@keyframes sparkle-pop {
+  0%   { transform: translate3d(0, 0, 0) scale(0); opacity: 1; }
+  55%  { opacity: 1; }
+  100% { transform: translate3d(var(--sx, 0px), var(--sy, -30px), 0) scale(1); opacity: 0; }
+}
+
+/* Breathing outline for valid drop targets */
+@keyframes ring-breathe {
+  0%, 100% { opacity: 0.30; }
+  50%      { opacity: 0.85; }
+}
+
+.animate-aurora       { animation: aurora-drift 28s ease-in-out infinite; }
+.animate-ken-burns    { animation: ken-burns 34s ease-in-out infinite alternate; }
+.animate-float-drift  { animation: float-drift 7.5s ease-in-out infinite; }
+.animate-gradient-pan { animation: gradient-pan 9s ease-in-out infinite; }
+.animate-ring-breathe { animation: ring-breathe 2.4s ease-in-out infinite; }
+
+/* ── Aurora mesh backdrop ───────────────────────────────────────
+   Three soft palette blooms over the elephant artwork. Blurred and
+   pointer-transparent; sits *under* content. */
+.aurora {
+  background:
+    radial-gradient(38% 42% at 18% 20%, hsl(var(--primary) / 0.16), transparent 68%),
+    radial-gradient(34% 38% at 84% 16%, hsl(var(--accent) / 0.13), transparent 68%),
+    radial-gradient(42% 46% at 50% 92%, hsl(var(--secondary) / 0.10), transparent 70%);
+  filter: blur(30px);
+  will-change: transform;
+}
+.dark .aurora {
+  background:
+    radial-gradient(38% 42% at 18% 20%, hsl(var(--primary) / 0.46), transparent 70%),
+    radial-gradient(34% 38% at 84% 16%, hsl(var(--accent) / 0.36), transparent 70%),
+    radial-gradient(42% 46% at 50% 92%, hsl(var(--secondary) / 0.22), transparent 72%);
+}
+
+/* ── Animated gradient text ──────────────────────────────────── */
+.text-gradient {
+  /* Violet→teal→violet only. Both endpoints stay ≥4.5:1 on the light
+     page and on the dark page, so the animated pan never dips below
+     AA at any point in the cycle. Gold is deliberately excluded. */
+  background-image: linear-gradient(
+    100deg,
+    hsl(var(--primary)),
+    hsl(var(--accent)) 45%,
+    hsl(var(--primary))
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ── Moving highlight inside progress fills ──────────────────── */
+.progress-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 35%,
+    hsl(0 0% 100% / 0.55) 50%,
+    transparent 65%
+  );
+  transform: translateX(-140%) skewX(-18deg);
+  animation: shine-sweep 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ── Hover light sweep ───────────────────────────────────────── */.shine-hover {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.shine-hover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 22%,
+    hsl(0 0% 100% / 0.38) 50%,
+    transparent 78%
+  );
+  transform: translateX(-140%) skewX(-18deg);
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .shine-hover:hover::after { animation: shine-sweep 0.95s ease-out; }
+}
+
+/* ── Gradient-bordered "luxe" surface ────────────────────────── */
+.card-luxe {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--card)), hsl(var(--card))) padding-box,
+    linear-gradient(
+        140deg,
+        hsl(var(--primary) / 0.55),
+        hsl(var(--accent) / 0.40) 45%,
+        hsl(var(--secondary) / 0.50)
+      )
+      border-box;
+  box-shadow: var(--shadow-lg);
+}
+.dark .card-luxe {
+  background:
+    linear-gradient(hsl(var(--card)), hsl(var(--card))) padding-box,
+    linear-gradient(
+        140deg,
+        hsl(var(--primary) / 0.75),
+        hsl(var(--accent) / 0.55) 45%,
+        hsl(var(--secondary) / 0.65)
+      )
+      border-box;
+}
+
+/* ── Jigsaw silhouette for tray pieces (desktop only) ──────────
+   Why a media query and not a plain class: the tabs are cut *inward*
+   so the shape never escapes the element box (an outward polygon would
+   overlap neighbours and be clipped by the tray's `overflow-y-auto`).
+   That only leaves enough text room when the piece is roughly square,
+   which the tray guarantees at ≥1024px (`lg:grid-cols-2` in an 80-wide
+   column → ~155px squares). Below that the pieces get wide and the
+   notches would bite into the quote text, so they stay rounded there.
+
+   `clip-path` also clips `box-shadow`, which is how Tailwind renders
+   both `ring-*` and `shadow-*` — so the selection glow is re-expressed
+   as a `drop-shadow` filter, which DOES follow the clipped outline. */
+@media (min-width: 1024px) {
+  .jigsaw-tray-piece {
+    border-color: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    /* Four socket blanks (opening narrower than the cavity, so there is a
+       real undercut). Cavity depth is 10% of the piece, which is why the
+       statement padding below is pushed past that. */
+    clip-path: polygon(
+      0% 0%, 40% 0%, 38% 2%, 36% 4%, 36% 10%, 64% 10%, 64% 4%, 62% 2%, 60% 0%,
+      100% 0%, 100% 40%, 98% 38%, 96% 36%, 90% 36%, 90% 64%, 96% 64%, 98% 62%, 100% 60%,
+      100% 100%, 60% 100%, 62% 98%, 64% 96%, 64% 90%, 36% 90%, 36% 96%, 38% 98%, 40% 100%,
+      0% 100%, 0% 60%, 2% 62%, 4% 64%, 10% 64%, 10% 36%, 4% 36%, 2% 38%, 0% 40%
+    );
+  }
+  /* Keep the quote text clear of the side cavities (10% ≈ 15.5px at 155px) */
+  .jigsaw-tray-piece .jigsaw-piece-statement {
+    padding-left: 1.1rem;
+    padding-right: 1.1rem;
+  }
+  .jigsaw-tray-piece[aria-pressed="true"] {
+    filter: drop-shadow(0 0 5px hsl(var(--gold) / 0.85))
+            drop-shadow(0 0 16px hsl(var(--gold) / 0.45));
+  }
+}
+
+/* ── Mobile touch targets ────────────────────────────────────────
+   TESTING_GUIDE.md requires "All buttons are at least 44x44px (touch
+   target size)" under Mobile Testing (< 768px).
+
+   Root cause of the violations: the shadcn defaults are 40px tall
+   (`h-10` on Button/Input, `h-9` for `size="sm"`, `h-10 w-10` for
+   `size="icon"`), and several legacy pages use bare `py-1`/`py-2`
+   buttons. Fixing this at each call site would touch a dozen files and
+   silently change the desktop layout too.
+
+   `min-height` beats `height` in CSS regardless of cascade layer, so
+   this lifts every control to the documented minimum on mobile while
+   leaving the desktop design byte-identical.
+
+   Deliberately excluded:
+   - `[data-inline]` — WCAG 2.5.8 exempts targets inside a sentence
+     ("join a game here", "Return to Home"); inflating them would wreck
+     the surrounding text flow.
+   - checkbox/radio/hidden — min-height would distort the control. */
+@media (max-width: 767px) {
+  button:not([data-inline]),
+  [role="button"]:not([data-inline]),
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  select,
+  textarea {
+    min-height: 44px;
+  }
 }
 
 /* Accessibility */

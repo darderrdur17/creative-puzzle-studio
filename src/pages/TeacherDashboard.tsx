@@ -150,7 +150,8 @@ const TeacherDashboard = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            aria-label="Back to home"
+            className="h-11 w-11 shrink-0"
             onClick={() => navigate("/")}
           >
             <ArrowLeft className="h-4 w-4" />

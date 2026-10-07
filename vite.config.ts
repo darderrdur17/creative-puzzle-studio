@@ -12,6 +12,20 @@ export default defineConfig({
     },
   },
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        // Split large third-party libraries into their own chunks. Without this the
+        // app ships as one ~800 kB bundle, which trips Rollup's 500 kB chunk warning
+        // and forces the whole vendor tree to be re-downloaded on every app change.
+        manualChunks: {
+          "vendor-react": ["react", "react-dom", "react/jsx-runtime", "react-router-dom"],
+          "vendor-motion": ["framer-motion"],
+          "vendor-supabase": ["@supabase/supabase-js"],
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

@@ -41,7 +41,7 @@ export function BestIdeasQuestion({
   };
 
   return (
-    <Card className="w-full shadow-xl border-stage-incubation/30">
+    <Card className="w-full border-stage-incubation/85 shadow-xl shadow-stage-incubation/15">
       <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
         <CardTitle
           id={labelId}

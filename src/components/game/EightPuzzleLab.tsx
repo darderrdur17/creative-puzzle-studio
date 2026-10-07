@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import elephantImg from "@/assets/elephant-jewel-forest.png";
+import elephantImg from "@/assets/elephant-jewel-forest.webp";
 
 interface Tile {
   /** Index in solved order (0..8) */

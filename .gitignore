@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Vite/Vitest write a transient <config>.timestamp-<id>.mjs next to the config
+# while loading it. They are deleted on a clean exit, so any that survive are
+# leftovers from an interrupted build — never commit them.
+*.timestamp-*.mjs
+
+# Local AI-assistant working state (memory notes, session data)
+.workbuddy-ai/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -15,13 +15,26 @@ import { useTeacherAuth } from "@/hooks/useTeacherAuth";
 import { useGameSession } from "@/hooks/useGameSession";
 import { BestIdeasQuestion } from "@/components/BestIdeasQuestion";
 import { useBestIdeasAnswer } from "@/hooks/useBestIdeasAnswer";
-import elephantImg from "@/assets/elephant-jewel-forest.png";
+import elephantImg from "@/assets/elephant-jewel-forest.webp";
 
 const STAGES = [
-  { name: "Preparation",  color: "bg-stage-preparation",  emoji: "🔵" },
-  { name: "Incubation",   color: "bg-stage-incubation",   emoji: "🟣" },
-  { name: "Illumination", color: "bg-stage-illumination", emoji: "🟡" },
-  { name: "Verification", color: "bg-stage-verification",  emoji: "✅" },
+  { name: "Preparation",  color: "bg-stage-preparation",  text: "text-stage-fg-preparation",  emoji: "🔵" },
+  { name: "Incubation",   color: "bg-stage-incubation",   text: "text-stage-fg-incubation",   emoji: "🟣" },
+  { name: "Illumination", color: "bg-stage-illumination", text: "text-stage-fg-illumination", emoji: "🟡" },
+  { name: "Verification", color: "bg-stage-verification", text: "text-stage-fg-verification", emoji: "✅" },
+];
+
+/**
+ * Decorative sparkle field. Deterministic (no Math.random) so the layout is
+ * stable across renders and screenshots. Purely presentational.
+ */
+const SPARKLES = [
+  { top: "12%", left: "8%",  size: 5, delay: "0s",   dur: "3.4s" },
+  { top: "22%", left: "88%", size: 4, delay: "0.9s", dur: "4.1s" },
+  { top: "38%", left: "5%",  size: 3, delay: "1.6s", dur: "3.8s" },
+  { top: "58%", left: "92%", size: 5, delay: "0.4s", dur: "4.6s" },
+  { top: "72%", left: "12%", size: 4, delay: "2.1s", dur: "3.6s" },
+  { top: "86%", left: "78%", size: 3, delay: "1.2s", dur: "4.3s" },
 ];
 
 const Index = () => {
@@ -138,24 +151,52 @@ const Index = () => {
         <ThemeToggle />
       </div>
 
-      {/* Elephant background */}
-      <div className="pointer-events-none absolute inset-0">
-        <img
-          src={elephantImg}
-          alt=""
-          className="h-full w-full object-cover object-center opacity-[0.13] dark:opacity-[0.08]"
-          decoding="async"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/30 to-background/70" />
+      {/* ── Background stack: elephant artwork + aurora mesh + sparkles ── */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {/* Elephant artwork (preserved) — now drifts on a very slow ken-burns cycle */}
+        <div className="absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_0%,hsl(var(--primary)_/_0.12),transparent_62%)]">
+          <img
+            src={elephantImg}
+            alt=""
+            className="animate-ken-burns h-full w-full object-cover object-center opacity-[0.26] dark:opacity-[0.14]"
+            decoding="async"
+          />
+        </div>
+
+        {/* Animated aurora mesh, drifting slowly behind the content */}
+        <div className="animate-aurora aurora absolute -inset-[14%]" />
+
+        {/* Legibility scrim: vertical wash + soft vignette to focus the column */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/55 via-background/20 to-background/70" />
+        <div className="absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_46%,transparent_42%,hsl(var(--background)_/_0.62)_100%)]" />
+
+        {/* Sparkle field */}
+        <div className="absolute inset-0">
+          {SPARKLES.map((sp, i) => (
+            <span
+              key={i}
+              className="animate-twinkle absolute rounded-full bg-secondary/80 blur-[1px]"
+              style={{
+                top: sp.top,
+                left: sp.left,
+                width: sp.size,
+                height: sp.size,
+                animationDelay: sp.delay,
+                animationDuration: sp.dur,
+              }}
+            />
+          ))}
+        </div>
       </div>
 
-      {/* Floating stage badges */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      {/* Floating stage badges — decorative; hidden on phones where they
+          collide with the content column */}
+      <div className="pointer-events-none absolute inset-0 hidden overflow-hidden sm:block" aria-hidden>
         {STAGES.map((s, i) => (
           <motion.div
             key={s.name}
             initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 0.18, y: 0 }}
+            animate={{ opacity: 0.30, y: 0 }}
             transition={{ delay: 0.6 + i * 0.15, duration: 0.6 }}
             style={{
               position: "absolute",
@@ -163,9 +204,13 @@ const Index = () => {
               left: i % 2 === 0 ? `${4 + i * 2}%` : undefined,
               right: i % 2 !== 0 ? `${4 + i * 2}%` : undefined,
             }}
-            className={`rounded-full ${s.color} px-3 py-1 text-xs font-bold text-white shadow-lg`}
           >
-            {s.emoji} {s.name}
+            <span
+              className={`animate-float-drift block rounded-full ${s.color} px-3 py-1 text-xs font-bold ${s.text} shadow-lg`}
+              style={{ animationDelay: `${i * 0.8}s` }}
+            >
+              {s.emoji} {s.name}
+            </span>
           </motion.div>
         ))}
       </div>
@@ -177,37 +222,67 @@ const Index = () => {
         transition={{ duration: 0.55 }}
         className="relative z-10 flex w-full max-w-md flex-col items-center gap-6"
       >
-        {/* Logo */}
+        {/* Logo + title */}
         <div className="text-center">
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 220, delay: 0.18 }}
-            className="mx-auto mb-4 flex justify-center"
+            initial={{ scale: 0, rotate: -12 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 220, damping: 16, delay: 0.18 }}
+            className="relative mx-auto mb-4 flex justify-center"
           >
-            <AppLogo size="lg" />
+            {/* Soft palette halo pulsing behind the logo */}
+            <span
+              aria-hidden
+              className="animate-pulse-glow absolute inset-0 rounded-full bg-primary/25 blur-2xl"
+            />
+            <AppLogo size="lg" className="relative" />
           </motion.div>
-          <h1 className="font-display text-4xl font-bold tracking-tight text-foreground md:text-5xl">
-            Creativity is<span className="text-primary">…</span>
-          </h1>
-          <p className="mt-2 text-base text-muted-foreground">
-            A jigsaw puzzle game about the creative process
-          </p>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.55 }}
-            className="mt-3 flex flex-wrap justify-center gap-1.5"
+
+          <motion.h1
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.28, duration: 0.5 }}
+            className="font-display text-4xl font-bold tracking-tight md:text-5xl"
           >
-            {STAGES.map((s) => (
-              <span
+            <span className="text-gradient animate-gradient-pan">Creativity is</span>
+            <motion.span
+              className="inline-block text-primary"
+              animate={{ opacity: [1, 0.2, 1] }}
+              transition={{ duration: 1.9, repeat: Infinity, ease: "easeInOut" }}
+            >
+              …
+            </motion.span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="mt-2 text-base text-muted-foreground"
+          >
+            A jigsaw puzzle game about the creative process
+          </motion.p>
+
+          {/* Stage chips — staggered pop-in, lift on hover */}
+          <div className="mt-3 flex flex-wrap justify-center gap-1.5">
+            {STAGES.map((s, i) => (
+              <motion.span
                 key={s.name}
-                className={`rounded-full ${s.color} px-2.5 py-0.5 text-[10px] font-semibold text-white opacity-90 shadow-sm`}
+                initial={{ opacity: 0, scale: 0.6, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{
+                  delay: 0.55 + i * 0.08,
+                  type: "spring",
+                  stiffness: 320,
+                  damping: 20,
+                }}
+                whileHover={{ scale: 1.09, y: -2 }}
+                className={`cursor-default rounded-full ${s.color} px-2.5 py-0.5 text-[10px] font-semibold ${s.text} shadow-sm`}
               >
                 {s.name}
-              </span>
+              </motion.span>
             ))}
-          </motion.div>
+          </div>
         </div>
 
         {/* ── TEACHER LOGGED IN: show teacher home ── */}
@@ -279,7 +354,7 @@ const Index = () => {
               {/* Student join — primary action */}
               <Button
                 size="lg"
-                className="w-full gap-2 text-base shadow-lg shadow-primary/20 min-h-[48px] touch-manipulation"
+                className="shine-hover w-full gap-2 text-base shadow-lg shadow-primary/20 min-h-[48px] touch-manipulation"
                 disabled={needsBestIdeasAnswer || guestActionsBlocked}
                 onClick={() => setMode("join")}
               >
@@ -329,7 +404,7 @@ const Index = () => {
               transition={{ duration: 0.22 }}
               className="w-full"
             >
-              <Card className="shadow-xl">
+              <Card className="card-luxe">
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-primary" />
@@ -415,7 +490,7 @@ const Index = () => {
               transition={{ duration: 0.22 }}
               className="w-full"
             >
-              <Card className="shadow-xl">
+              <Card className="card-luxe">
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2">
                     <Users className="h-5 w-5 text-primary" />
@@ -455,7 +530,7 @@ const Index = () => {
                     />
                   </div>
                   {error && (
-                    <motionField className="space-y-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    <motion.div className="space-y-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
                       <p role="alert">{error}</p>
                       <Button
                         type="button"
@@ -466,7 +541,7 @@ const Index = () => {
                       >
                         Try again
                       </Button>
-                    </motionField>
+                    </motion.div>
                   )}
                   <div className="flex flex-wrap gap-2 pt-1">
                     <Button
@@ -493,9 +568,12 @@ const Index = () => {
 
         {/* Feature strip */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
+          initial="hidden"
+          animate="show"
+          variants={{
+            hidden: {},
+            show: { transition: { delayChildren: 0.7, staggerChildren: 0.08 } },
+          }}
           className="grid w-full grid-cols-4 gap-3 text-center text-xs text-muted-foreground"
         >
           {[
@@ -504,17 +582,23 @@ const Index = () => {
             { icon: <Trophy   className="h-5 w-5 text-accent mx-auto" />,              label: "Leaderboard" },
             { icon: <BookOpen className="h-5 w-5 text-stage-elaboration mx-auto" />,   label: "8‑Puzzle Lab", href: "/lab07/game" },
           ].map((f) => (
-            <div key={f.label} className="flex flex-col items-center gap-1">
-              <button
+            <motion.div
+              key={f.label}
+              variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
+              className="flex flex-col items-center gap-1"
+            >
+              <motion.button
                 type="button"
+                whileHover={{ y: -3, scale: 1.06 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => f.href && navigate(f.href)}
                 className="flex flex-col items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px] touch-manipulation"
                 aria-label={f.href ? `Go to ${f.label}` : f.label}
               >
                 {f.icon}
                 <span>{f.label}</span>
-              </button>
-            </div>
+              </motion.button>
+            </motion.div>
           ))}
         </motion.div>
       </motion.div>

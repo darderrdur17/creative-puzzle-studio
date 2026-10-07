@@ -231,7 +231,7 @@ const Game = () => {
       }
       setSelectedPiece(null);
     },
-    [selectedPiece, pieces]
+    [selectedPiece, pieces, comboStreak]
   );
 
   const handlePieceSelect = useCallback((pieceId: string) => {
