@@ -129,6 +129,11 @@ Landing and 404 load eagerly; every other route is code-split with `React.lazy`.
 | Toasts | Sonner |
 | Tests | Vitest 3 + Testing Library (jsdom) |
 
+The dependency list is deliberately small: 21 runtime packages. Only the twelve `components/ui/`
+primitives the app actually renders are kept — the rest of the shadcn scaffold was removed along
+with the packages only it used. Re-add a primitive with
+`npx shadcn@latest add <name>` if a future screen needs one.
+
 ## Getting started
 
 **Prerequisites:** Node.js 18 or newer, npm, and a Supabase project.
@@ -190,18 +195,20 @@ npm run typecheck && npm run lint && npm test && npm run build
 ```
 
 The suite covers the parts where a bug is silent — the score maths, the grid-scaling invariant,
-leaderboard write de-duplication, CSV escaping, and the retry paths:
+leaderboard write de-duplication, CSV escaping, the retry paths, and the board itself:
 
 | File | Covers |
 |---|---|
 | `src/test/gameData.test.ts` | Scoring (including negative/`NaN` time), grid scaling and the solvability invariant, decoy pool, game codes, quote injection |
+| `src/test/jigsaw-flow.test.tsx` | A full playthrough of the real board: all four keys placed, the 2.2 s phase transition, every quote matched to its column, wrong taps rejected, decoys refused in every column, and `onCompleted` firing exactly once |
 | `src/test/update-score.test.ts` | Row recovery when the player hasn't loaded, success/failure reporting, the timeout write guard |
 | `src/test/retry-feedback.test.tsx` | Error states and retry toasts on the leaderboard and dashboard |
 | `src/test/csv.test.ts` | RFC-4180 quoting and CSV-injection guarding |
 | `src/lib/bestIdeasAnswer.test.ts` | Answer normalisation |
 
 Test config lives in `vitest.config.ts` (Vitest ignores a `test` block in `vite.config.ts` when that
-file exists).
+file exists). `src/test/setup.ts` stubs `matchMedia` and `scrollTo`, both of which jsdom leaves
+unimplemented and Framer Motion calls during layout.
 
 ## Deployment
 
@@ -222,7 +229,7 @@ The output in `dist/` is a static single-page app.
 ```
 src/
   components/       UI, game board, theme provider, instructions
-  components/ui/    shadcn/ui primitives
+  components/ui/    the twelve shadcn/ui primitives the app renders
   hooks/            auth, session, best-ideas, theme
   lib/              game data and scoring, grid config, CSV, clipboard, audio
   pages/            one module per route
@@ -255,6 +262,12 @@ None of these are imported by `src/`; deleting them would not affect the build.
   only their own row.
 - Nicknames are user input and are escaped on CSV export (quoted per RFC 4180 and prefixed against
   spreadsheet formula injection).
+- **Known advisories.** `npm audit --omit=dev` reports two moderate findings against `react-router`
+  (open redirect via a backslash in `<Link>`/`useNavigate`, and constructor injection in
+  `deserializeErrors()` during SSR hydration). Both are fixed only in React Router 7.18+, a major
+  upgrade. Neither is reachable here: every navigation target is a hard-coded internal path, and the
+  app has no SSR. The rest of the production tree is clean, and `ws` is pinned via an `overrides`
+  entry to a patched 8.22.x because `@supabase/realtime-js` ships an older copy.
 
 ## License
 
