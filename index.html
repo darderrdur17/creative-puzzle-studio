@@ -7,16 +7,61 @@
     <title>Creativity is… — Jigsaw Puzzle Game</title>
     <meta name="description" content="A classroom-ready jigsaw puzzle game about the creative process. Match creativity stages and quotes on an elephant-themed puzzle." />
     <meta name="author" content="Creative Puzzle Studio" />
+    <meta name="theme-color" content="#0b0f19" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
 
     <meta property="og:title" content="Creativity is… — Jigsaw Puzzle Game" />
     <meta property="og:description" content="A classroom-ready jigsaw puzzle game about the creative process." />
     <meta property="og:type" content="website" />
 
     <meta name="twitter:card" content="summary_large_image" />
+
+    <script>
+      /* Apply the stored theme BEFORE first paint. React only runs its effects
+         after the first render, so without this a dark-theme user sees a white
+         flash on every hard load. Mirrors THEME_STORAGE_KEY in src/lib/themeContext.ts. */
+      (function () {
+        try {
+          if (localStorage.getItem("puzzle-theme") === "dark") {
+            document.documentElement.classList.add("dark");
+          }
+        } catch (e) {
+          /* storage blocked — default to light */
+        }
+      })();
+    </script>
+
+    <script>
+      /* If a module fails to evaluate (for example a missing Supabase env var
+         throws at import time, before React can mount its ErrorBoundary), the
+         page would otherwise be a silent blank screen. Surface the reason. */
+      window.addEventListener("error", function (event) {
+        var root = document.getElementById("root");
+        if (!root || root.childNodes.length > 0) return;
+        root.innerHTML =
+          '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:system-ui,sans-serif;text-align:center;color:#111">' +
+          '<div><h1 style="font-size:18px;margin:0 0 8px">This app could not start</h1>' +
+          '<p style="font-size:14px;color:#555;margin:0 0 12px">' +
+          (event && event.message ? String(event.message) : "An unexpected error occurred.") +
+          "</p>" +
+          '<p style="font-size:12px;color:#777;margin:0">Check the browser console, then reload.</p>' +
+          "</div></div>";
+      });
+    </script>
   </head>
 
   <body>
     <div id="root"></div>
+    <noscript>
+      <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; font-family: system-ui, sans-serif; text-align: center;">
+        <div>
+          <h1 style="font-size: 18px; margin: 0 0 8px;">JavaScript is required</h1>
+          <p style="font-size: 14px; color: #555; margin: 0;">
+            This puzzle game runs entirely in your browser. Please enable JavaScript and reload the page.
+          </p>
+        </div>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

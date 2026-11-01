@@ -2,13 +2,32 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? "";
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+/* L12: `createClient` throws on an empty/invalid URL, which would crash the
+   whole module graph at import time and white-screen the app when the env vars
+   are missing (e.g. a fresh clone before `.env` exists). Detect the missing
+   config, warn loudly, and fall back to a well-formed but inert URL so
+   construction never throws. Real auth/session/score calls then fail cleanly at
+   the network layer (handled by the hooks) instead of taking the page down. */
+const isConfigured = SUPABASE_URL.startsWith("http") && SUPABASE_PUBLISHABLE_KEY.length > 0;
+
+if (!isConfigured) {
+  console.error(
+    "[supabase] Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY. " +
+      "The app will load, but sign-in, game sessions, and score saving will fail. " +
+      "Copy .env.example to .env and restart the dev server."
+  );
+}
+
+const safeUrl = isConfigured ? SUPABASE_URL : "https://placeholder.supabase.co";
+const safeKey = isConfigured ? SUPABASE_PUBLISHABLE_KEY : "public-anon-placeholder";
+
+export const supabase = createClient<Database>(safeUrl, safeKey, {
   auth: {
     storage: localStorage,
     persistSession: true,

@@ -165,12 +165,11 @@ export const SlidingPicturePuzzle: React.FC<SlidingPicturePuzzleProps> = ({
         {/* Background image is applied via tiles; this wrapper just holds the grid */}
         {tiles.map((tile) => {
           if (tile.id === blankId) {
-            // Blank space
+            // Blank space — decorative, not a control.
             return (
-              <button
+              <div
                 key={tile.id}
-                type="button"
-                aria-label="Empty slot"
+                aria-hidden
                 style={{
                   position: "absolute",
                   width: `${tileSizePercent}%`,

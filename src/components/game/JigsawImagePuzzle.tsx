@@ -161,7 +161,9 @@ export function JigsawImagePuzzle({
 
     // 4. Filler decoys: wrong quotes (exclude correct ones so decoys never match)
     const fillerPool = getFillerQuotePool(stages, correctQuotes);
-    const numFiller = Math.max(0, (level - 2) * 2);
+    // One decoy per level above Easy. The pool has at least one spare quote per
+    // stage (see MIN_QUOTES_PER_STAGE), so this is non-empty from level 2 up.
+    const numFiller = Math.max(0, level - 1);
     const fillerQuotes = sampleRandom(fillerPool, numFiller);
     fillerQuotes.forEach((q) => {
       quotePieces.push({
@@ -201,6 +203,21 @@ export function JigsawImagePuzzle({
   const [lastPlacedCell, setLastPlacedCell] = useState<string | null>(null);
   const completedRef = useRef(false);
 
+  /* `pieces` is rebuilt whenever the difficulty (grid size) or the stage set
+     changes. `useState` only consumes its initial value, so without this the
+     board would keep the old pieces while the grid around it changed — cells
+     that can never be filled, and a puzzle that cannot be completed. Reset the
+     whole board whenever a new piece set arrives. */
+  useEffect(() => {
+    setPiecesState(pieces);
+    setPhase(1);
+    setPhaseTransition(false);
+    setSelectedPieceId(null);
+    setFeedback(null);
+    setLastPlacedCell(null);
+    completedRef.current = false;
+  }, [pieces]);
+
   const keyPieces = piecesState.filter((p) => p.type === "key");
   const quotePieces = piecesState.filter((p) => p.type === "quote" && !p.isFiller);
   const keysPlaced = keyPieces.filter((p) => p.placed).length;
@@ -211,6 +228,11 @@ export function JigsawImagePuzzle({
     phase === 1
       ? piecesState.filter((p) => p.type === "key" && !p.placed)
       : piecesState.filter((p) => p.type === "quote" && !p.placed);
+
+  /* Decoys are never placeable, so they must not be counted in the "N left"
+     badge or the "all placed" message — otherwise the tray reports leftovers
+     forever, even after the puzzle is complete. */
+  const remainingPlaceable = unplaced.filter((p) => !p.isFiller).length;
 
   const totalToPlace = 4 + quotesToPlace;
   const placedCount = phase === 1 ? keysPlaced : keysPlaced + quotesPlaced;
@@ -352,7 +374,12 @@ export function JigsawImagePuzzle({
       <div className="flex-1 flex flex-col items-center order-2 lg:order-1">
         <div
           className="jigsaw-board relative w-full rounded-xl border-2 border-explorer-gold/60 shadow-lg ring-1 ring-explorer-dark/10 overflow-hidden bg-explorer-dark/[0.06] bg-gradient-to-b from-white/10 to-transparent touch-manipulation select-none min-h-[200px]"
-          style={{ maxWidth: 640, aspectRatio: `${cols}/${rows}` }}
+          style={{
+            /* Cap by width AND by viewport height: taller grids (4×5, 4×6) would
+               otherwise grow past the fold and push the tray out of reach. */
+            maxWidth: `min(640px, calc((100dvh - 16rem) * ${cols} / ${rows}))`,
+            aspectRatio: `${cols}/${rows}`,
+          }}
         >
           {/* Faded background elephant: shows the full puzzle image without giving away individual pieces */}
           <img
@@ -583,37 +610,55 @@ export function JigsawImagePuzzle({
       </div>
 
       <div className="w-full lg:w-80 flex flex-col order-1 lg:order-2">
-        <button
-          type="button"
-          onClick={() => !isMobile && setIsTrayExpanded((prev) => !prev)}
-          aria-expanded={isTrayExpanded || isMobile}
-          aria-controls="jigsaw-tray-content"
-          className={[
-            "jigsaw-tray-toggle w-full flex items-center justify-between p-3 rounded-xl transition-all duration-200 min-h-[44px]",
-            "bg-gradient-to-r from-explorer-gold/20 to-explorer-parchment border border-explorer-gold/35",
-            "lg:bg-transparent lg:border-none lg:p-0",
-          ].join(" ")}
-        >
-          <h3 className="flex items-center gap-2 font-display text-sm font-bold sm:text-base">
-            {phase === 1 ? (
-              <Puzzle className="h-5 w-5 text-explorer-gold-ink" />
-            ) : (
-              <Quote className="h-5 w-5 text-explorer-gold-ink" />
-            )}
-            {phase === 1 ? "Main keys" : "Quotes"}
-            <span className="ml-2 rounded-full bg-explorer-gold/20 px-2 py-0.5 text-[10px] font-semibold text-explorer-dark sm:text-xs">
-              {unplaced.length} left
-            </span>
-          </h3>
-          {/* On mobile, tray is always expanded — no collapse to avoid extra taps */}
-          <div className={isMobile ? "hidden" : "lg:hidden"}>
-            {isTrayExpanded ? (
-              <ChevronUp className="h-5 w-5" />
-            ) : (
-              <ChevronDown className="h-5 w-5" />
-            )}
+        {/* On mobile the tray is permanently expanded, so there is nothing to
+            toggle — rendering a <button> there would be a control that does
+            nothing when tapped. Desktop keeps the real disclosure button. */}
+        {isMobile ? (
+          <div className="jigsaw-tray-toggle w-full flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-explorer-gold/20 to-explorer-parchment border border-explorer-gold/35 min-h-[44px]">
+            <h3 className="flex items-center gap-2 font-display text-sm font-bold sm:text-base">
+              {phase === 1 ? (
+                <Puzzle className="h-5 w-5 text-explorer-gold-ink" />
+              ) : (
+                <Quote className="h-5 w-5 text-explorer-gold-ink" />
+              )}
+              {phase === 1 ? "Main keys" : "Quotes"}
+              <span className="ml-2 rounded-full bg-explorer-gold/20 px-2 py-0.5 text-[10px] font-semibold text-explorer-dark sm:text-xs">
+                {remainingPlaceable} left
+              </span>
+            </h3>
           </div>
-        </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsTrayExpanded((prev) => !prev)}
+            aria-expanded={isTrayExpanded}
+            aria-controls="jigsaw-tray-content"
+            className={[
+              "jigsaw-tray-toggle w-full flex items-center justify-between p-3 rounded-xl transition-all duration-200 min-h-[44px]",
+              "bg-gradient-to-r from-explorer-gold/20 to-explorer-parchment border border-explorer-gold/35",
+              "lg:bg-transparent lg:border-none lg:p-0",
+            ].join(" ")}
+          >
+            <h3 className="flex items-center gap-2 font-display text-sm font-bold sm:text-base">
+              {phase === 1 ? (
+                <Puzzle className="h-5 w-5 text-explorer-gold-ink" />
+              ) : (
+                <Quote className="h-5 w-5 text-explorer-gold-ink" />
+              )}
+              {phase === 1 ? "Main keys" : "Quotes"}
+              <span className="ml-2 rounded-full bg-explorer-gold/20 px-2 py-0.5 text-[10px] font-semibold text-explorer-dark sm:text-xs">
+                {remainingPlaceable} left
+              </span>
+            </h3>
+            <div className="lg:hidden">
+              {isTrayExpanded ? (
+                <ChevronUp className="h-5 w-5" />
+              ) : (
+                <ChevronDown className="h-5 w-5" />
+              )}
+            </div>
+          </button>
+        )}
 
         <AnimatePresence>
           {(isTrayExpanded || isMobile) && (
@@ -698,7 +743,7 @@ export function JigsawImagePuzzle({
                   })}
                 </AnimatePresence>
 
-                {unplaced.length === 0 && (
+                {remainingPlaceable === 0 && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}

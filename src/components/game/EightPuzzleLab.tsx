@@ -65,6 +65,12 @@ function performRandomMoves(tiles: Tile[], steps: number): Tile[] {
 export const EightPuzzleLab: React.FC = () => {
   const [tiles, setTiles] = useState<Tile[]>(() => createSolvedTiles());
   const [loaded, setLoaded] = useState(false);
+  /* The board starts in the solved order, so "solved" is true from the very
+     first render. The win overlay must therefore also require that the player
+     has actually done something — otherwise pressing "Load Puzzle" declares an
+     instant victory. */
+  const [hasPlayed, setHasPlayed] = useState(false);
+  const [hint, setHint] = useState<string | null>(null);
   const [bgColor, setBgColor] = useState("white");
   const [shuffleSteps, setShuffleSteps] = useState("1");
 
@@ -76,6 +82,8 @@ export const EightPuzzleLab: React.FC = () => {
   const handleLoadPuzzle = () => {
     setTiles(createSolvedTiles());
     setLoaded(true);
+    setHasPlayed(false);
+    setHint(null);
   };
 
   const handleTileClick = (clickedPos: number) => {
@@ -87,10 +95,14 @@ export const EightPuzzleLab: React.FC = () => {
     const neighbors = getNeighbors(blankPos);
     const isAdjacent = neighbors.includes(clickedPos);
     if (!isAdjacent) {
-      window.alert("Illegal move – you can only move tiles next to the empty space.");
+      // Inline hint rather than window.alert(): a modal alert blocks the page,
+      // is suppressed in some embedded contexts, and interrupts the game.
+      setHint("You can only move a tile that sits next to the empty space.");
       return;
     }
 
+    setHint(null);
+    setHasPlayed(true);
     setTiles((prev) =>
       prev.map((t) => {
         if (t.position === clickedPos) return { ...t, position: blankPos };
@@ -103,10 +115,12 @@ export const EightPuzzleLab: React.FC = () => {
   const handleShuffle = () => {
     const steps = Number(shuffleSteps);
     if (!Number.isInteger(steps) || steps < 1 || steps > 20) {
-      window.alert("Please enter a shuffle step count between 1 and 20.");
+      setHint("Please enter a shuffle step count between 1 and 20.");
       return;
     }
 
+    setHint(null);
+    setHasPlayed(true);
     setTiles((prev) => performRandomMoves(prev, steps));
   };
 
@@ -149,10 +163,9 @@ export const EightPuzzleLab: React.FC = () => {
 
               if (tile.id === BLANK_ID) {
                 return (
-                  <button
+                  <div
                     key={tile.id}
-                    type="button"
-                    aria-label="Empty slot"
+                    aria-hidden
                     style={{
                       position: "absolute",
                       width: `${tileSizePercent}%`,
@@ -191,7 +204,7 @@ export const EightPuzzleLab: React.FC = () => {
               );
             })}
 
-            {loaded && isSolved && (
+            {loaded && hasPlayed && isSolved && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
                 <div className="bg-white rounded-xl px-4 py-2 shadow">
                   <span className="mr-1">🎉</span>
@@ -260,6 +273,11 @@ export const EightPuzzleLab: React.FC = () => {
                 Shuffle
               </button>
             </div>
+            {hint && (
+              <p role="status" className="mt-2 rounded bg-amber-50 px-2 py-1 text-xs text-amber-800">
+                {hint}
+              </p>
+            )}
           </div>
         </div>
       </div>

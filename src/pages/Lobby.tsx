@@ -15,6 +15,7 @@ import {
 import { useAnonymousAuth } from "@/hooks/useAnonymousAuth";
 import { useGameSession } from "@/hooks/useGameSession";
 import { DIFFICULTY_CONFIG } from "@/lib/gameData";
+import { copyTextToClipboard } from "@/lib/clipboard";
 import { toast } from "sonner";
 
 const Lobby = () => {
@@ -28,6 +29,10 @@ const Lobby = () => {
 
   const [copied, setCopied] = useState(false);
   const isGameMaster = currentPlayer?.is_game_master ?? false;
+  /* The game master is stored as a player row too, so `players.length` includes
+     them. The start button and its helper text must both count *students*, or
+     the button is enabled while the UI still says it is waiting for one. */
+  const studentCount = players.filter((p) => !p.is_game_master).length;
 
   useEffect(() => {
     if (session?.status === "playing") {
@@ -38,17 +43,13 @@ const Lobby = () => {
     }
   }, [session?.status, session?.id, navigate]);
 
-  const copyLink = () => {
+  const copyLink = async () => {
     const url = `${window.location.origin}/?code=${session?.code}`;
-    navigator.clipboard.writeText(url).catch(() => {
-      // Fallback for environments without clipboard API
-      const el = document.createElement("textarea");
-      el.value = url;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand("copy");
-      document.body.removeChild(el);
-    });
+    const ok = await copyTextToClipboard(url);
+    if (!ok) {
+      toast.error("Couldn't copy automatically — select the code and copy it manually.");
+      return;
+    }
     setCopied(true);
     toast.success("Invite link copied!");
     setTimeout(() => setCopied(false), 2500);
@@ -158,7 +159,11 @@ const Lobby = () => {
                 <label className="mb-1.5 block text-sm font-medium">Difficulty Level</label>
                 <Select
                   value={session.difficulty}
-                  onValueChange={(v) => updateDifficulty(v)}
+                  onValueChange={(v) => {
+                    void updateDifficulty(v).then((message) => {
+                      if (message) toast.error(message);
+                    });
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -223,7 +228,11 @@ const Lobby = () => {
                         size="icon"
                         variant="ghost"
                         className="h-7 w-7 text-muted-foreground hover:text-destructive min-w-[44px] min-h-[44px]"
-                        onClick={() => kickPlayer(p.id)}
+                        onClick={() => {
+                          void kickPlayer(p.id).then((message) => {
+                            if (message) toast.error(message);
+                          });
+                        }}
                         title={`Remove ${p.nickname}`}
                         aria-label={`Remove ${p.nickname} from game`}
                       >
@@ -249,16 +258,20 @@ const Lobby = () => {
             <Button
               size="lg"
               className="w-full gap-2 text-base shadow-lg shadow-primary/20 min-h-[48px] touch-manipulation"
-              disabled={players.length < 1}
-              onClick={startGame}
+              disabled={studentCount < 1}
+              onClick={() => {
+                void startGame().then((message) => {
+                  if (message) toast.error(message);
+                });
+              }}
             >
               <Play className="h-5 w-5" />
               Start Game for Everyone
             </Button>
             <p className="text-center text-xs text-muted-foreground">
-              {players.length < 2
+              {studentCount < 1
                 ? "Waiting for at least 1 student to join…"
-                : `${players.length} player${players.length !== 1 ? "s" : ""} ready`}
+                : `${studentCount} student${studentCount !== 1 ? "s" : ""} ready`}
             </p>
           </div>
         ) : (

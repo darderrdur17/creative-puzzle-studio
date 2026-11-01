@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { AppLogo } from "@/components/AppLogo";
 
 /* The landing page is the primary entry point, so it stays eager — putting a
@@ -46,28 +47,30 @@ const RouteFallback = () => (
 
 const App = () => (
   <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Suspense fallback={<RouteFallback />}>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/teacher/login" element={<TeacherLogin />} />
-              <Route path="/lobby/:sessionId" element={<Lobby />} />
-              <Route path="/game/:sessionId" element={<GameEnhanced />} />
-              <Route path="/results/:sessionId" element={<Results />} />
-              <Route path="/dashboard/:sessionId" element={<TeacherDashboard />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              {/* Lab-style 8-puzzle & sliding puzzle demo */}
-              <Route path="/lab07/game" element={<GameTimePage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/teacher/login" element={<TeacherLogin />} />
+                <Route path="/lobby/:sessionId" element={<Lobby />} />
+                <Route path="/game/:sessionId" element={<GameEnhanced />} />
+                <Route path="/results/:sessionId" element={<Results />} />
+                <Route path="/dashboard/:sessionId" element={<TeacherDashboard />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                {/* Lab-style 8-puzzle & sliding puzzle demo */}
+                <Route path="/lab07/game" element={<GameTimePage />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   </ErrorBoundary>
 );
 

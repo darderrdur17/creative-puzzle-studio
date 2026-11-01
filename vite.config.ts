@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -31,5 +32,14 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
     dedupe: ["react", "react-dom", "react/jsx-runtime", "framer-motion"],
+  },
+  test: {
+    // The scoring/grid tests are pure, but component tests need a DOM. Running
+    // everything under jsdom keeps one environment for the whole suite, and
+    // `setup.ts` (which polyfills matchMedia) is dead code without this wiring.
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.ts"],
+    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    restoreMocks: true,
   },
 });

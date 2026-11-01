@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Trophy, ArrowLeft, Clock, Hash } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,19 +16,37 @@ const Leaderboard = () => {
   const { userId } = useAnonymousAuth();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadEntries = useCallback(async (options?: { manual?: boolean }) => {
+    setLoading(true);
+    setError(null);
+    /* The error used to be discarded, so any failure rendered as "No games
+       played yet. Be the first!" — indistinguishable from a genuinely empty
+       board. Surface it and offer a retry instead. */
+    const { data, error: queryError } = await supabase
+      .from("leaderboard")
+      .select("*")
+      .order("total_score", { ascending: false })
+      .limit(50);
+
+    if (queryError) {
+      setError(queryError.message);
+      setEntries([]);
+      /* A manual retry that fails again must say so — otherwise the button
+         looks broken rather than merely unsuccessful. */
+      if (options?.manual) {
+        toast.error("Still can't load the leaderboard. Check your connection.");
+      }
+    } else {
+      setEntries(data ?? []);
+    }
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    const fetch = async () => {
-      const { data } = await supabase
-        .from("leaderboard")
-        .select("*")
-        .order("total_score", { ascending: false })
-        .limit(50);
-      setEntries(data || []);
-      setLoading(false);
-    };
-    fetch();
-  }, []);
+    void loadEntries();
+  }, [loadEntries]);
 
   const formatTime = (ms: number | null) => {
     if (!ms) return "—";
@@ -75,6 +94,19 @@ const Leaderboard = () => {
           <CardContent>
             {loading ? (
               <p className="py-8 text-center text-muted-foreground">Loading...</p>
+            ) : error ? (
+              <div className="py-8 text-center">
+                <p className="text-sm text-destructive">Couldn't load the leaderboard.</p>
+                <p className="mt-1 text-xs text-muted-foreground">{error}</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-4"
+                  onClick={() => void loadEntries({ manual: true })}
+                >
+                  Try again
+                </Button>
+              </div>
             ) : entries.length === 0 ? (
               <p className="py-8 text-center text-muted-foreground">No games played yet. Be the first!</p>
             ) : (

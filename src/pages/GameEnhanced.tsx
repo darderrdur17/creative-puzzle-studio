@@ -17,6 +17,7 @@ import { CompletionOverlay } from "@/components/game/CompletionOverlay";
 import { InstructionsModal } from "@/components/InstructionsModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import confetti from "canvas-confetti";
+import { toast } from "sonner";
 
 const GameEnhanced = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -57,23 +58,38 @@ const GameEnhanced = () => {
   const isPaused = !!session?.paused_at;
   const pausedAccumulatedRef = useRef(0);
   const lastPauseRef = useRef<number | null>(null);
+  const isPausedRef = useRef(isPaused);
 
-  // Timer — pauses when session is paused
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
+
+  /* Timer — starts once on mount and is frozen while the session is paused.
+     This effect deliberately does NOT depend on `isPaused`. Re-running it on
+     every pause toggle reset `startTimeRef` to "now", which wiped the elapsed
+     time on resume and briefly produced a negative clock (rendered as
+     "-1:-5"), and a negative time penalty inflated the final score. Paused time
+     is accumulated separately instead. */
   useEffect(() => {
     startTimeRef.current = Date.now();
+    pausedAccumulatedRef.current = 0;
+    lastPauseRef.current = isPausedRef.current ? Date.now() : null;
+
     timerRef.current = setInterval(() => {
-      if (isPaused) {
-        if (!lastPauseRef.current) lastPauseRef.current = Date.now();
+      if (isPausedRef.current) {
+        if (lastPauseRef.current === null) lastPauseRef.current = Date.now();
         return;
       }
-      if (lastPauseRef.current) {
+      if (lastPauseRef.current !== null) {
         pausedAccumulatedRef.current += Date.now() - lastPauseRef.current;
         lastPauseRef.current = null;
       }
-      setElapsedMs(Date.now() - startTimeRef.current - pausedAccumulatedRef.current);
+      setElapsedMs(
+        Math.max(0, Date.now() - startTimeRef.current - pausedAccumulatedRef.current),
+      );
     }, 100);
     return () => clearInterval(timerRef.current);
-  }, [isPaused]);
+  }, []);
 
   // Redirect when game finishes
   useEffect(() => {
@@ -148,11 +164,15 @@ const GameEnhanced = () => {
     setCompleted(true);
     clearInterval(timerRef.current);
     const finalScore = calculateJigsawScore(difficulty, elapsedMs, incorrectAttempts, totalPieces);
-    updateScore(finalScore, incorrectAttempts, elapsedMs, true);
     playCelebrationSound();
     confetti({ particleCount: 300, spread: 120, origin: { y: 0.5 } });
     setTimeout(() => confetti({ particleCount: 100, spread: 60, origin: { x: 0.2, y: 0.7 } }), 300);
     setTimeout(() => confetti({ particleCount: 100, spread: 60, origin: { x: 0.8, y: 0.7 } }), 600);
+    // Tell the player if the result could not be saved — a silent failure here
+    // means the teacher never sees the score and the student never knows.
+    void updateScore(finalScore, incorrectAttempts, elapsedMs, true).then((saved) => {
+      if (!saved) toast.error("We couldn't save your score — please tell your teacher.");
+    });
   }, [difficulty, elapsedMs, incorrectAttempts, totalPieces, updateScore]);
 
   const xpLevel = Math.floor(xp / 100) + 1;
@@ -176,7 +196,13 @@ const GameEnhanced = () => {
       clearInterval(timerRef.current);
       setCompleted(true);
       const finalScore = calculateJigsawScore(difficulty, elapsedMs, incorrectAttempts, totalPieces);
-      updateScore(finalScore, incorrectAttempts, elapsedMs, true);
+      /* `completed: false` on purpose — running out of time is not finishing.
+         Marking it complete put timed-out runs on the all-time leaderboard and
+         counted them as "finished" on the teacher dashboard, while the results
+         page still showed them as "Incomplete". */
+      void updateScore(finalScore, incorrectAttempts, elapsedMs, false).then((saved) => {
+        if (!saved) toast.error("We couldn't save your score — please tell your teacher.");
+      });
     }
   }, [timeUp, completed, difficulty, elapsedMs, incorrectAttempts, totalPieces, updateScore]);
 

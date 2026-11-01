@@ -55,16 +55,26 @@ export default function TeacherLogin() {
     if (!email.trim() || !password.trim()) return;
     setSubmitting(true);
     setError(null);
+    setSuccess(null);
     const result = await signUp(email.trim(), password.trim(), displayName.trim() || undefined);
     setSubmitting(false);
+
     if (result.error) {
       setError(result.error);
-    } else {
-      setSuccess(
-        "Account created! Check your email to confirm your address, then sign in."
-      );
-      setTab("signin");
+      return;
     }
+
+    /* Supabase answers a sign-up for an existing address with a fake user and
+       no error. Saying "check your email" here would send the teacher to an
+       inbox that never receives anything, so tell them what actually happened. */
+    if (result.alreadyRegistered) {
+      setError("An account with that email already exists. Sign in instead.");
+      setTab("signin");
+      return;
+    }
+
+    setSuccess("Account created! Check your email to confirm your address, then sign in.");
+    setTab("signin");
   };
 
   // Demo account: sign in first; if user doesn't exist, try creating once (then sign in). Cooldown on create failure to avoid rate limits.
@@ -98,7 +108,15 @@ export default function TeacherLogin() {
     result = await signIn(DEMO_EMAIL, DEMO_PASSWORD);
     setSubmitting(false);
     if (result.error) {
-      setSuccess("Demo account was created. If your project requires email confirmation, turn it off in Supabase Auth settings, or sign in with the demo email/password above.");
+      /* Two different worlds produce the same second failure. If the address was
+         already registered, the account exists and something else is blocking
+         the login (most often email confirmation). Otherwise the account really
+         was just created and still needs confirming. */
+      setError(
+        signupResult.alreadyRegistered
+          ? "The demo account already exists, but sign-in was refused. If email confirmation is switched on in Supabase Auth, confirm that address or turn confirmation off, then try again."
+          : "Demo account was created. If your project requires email confirmation, turn it off in Supabase Auth settings, or sign in with the demo email/password above."
+      );
     }
   };
 
@@ -140,7 +158,7 @@ export default function TeacherLogin() {
         </div>
 
         {/* Demo account callout */}
-        <div className="rounded-2xl border border-secondary/40 bg-secondary/8 p-4">
+        <div className="rounded-2xl border border-secondary/40 bg-secondary/10 p-4">
           <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-secondary">
             Demo Account
           </p>

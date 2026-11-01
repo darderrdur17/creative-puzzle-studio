@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -70,6 +70,13 @@ const Index = () => {
   const needsBestIdeasAnswer = isStudent && !bestIdeasLoading && !hasBestIdeas;
   const guestActionsBlocked = isStudent && authLoading;
 
+  /* `teacherName` arrives asynchronously, so a lazy useState initialiser always
+     captured null. Adopt the name once it resolves, without ever overwriting
+     something the teacher has already typed. */
+  useEffect(() => {
+    setNickname((current) => current || teacherName || "");
+  }, [teacherName]);
+
   useEffect(() => {
     if (mode === "join" && !bestIdeasLoading && !hasBestIdeas) {
       setJoinStep("ideas");
@@ -79,8 +86,15 @@ const Index = () => {
   }, [mode, hasBestIdeas, bestIdeasLoading]);
 
   const handleBestIdeasSubmit = async (answer: string) => {
-    if (!userId) await ensureGuestSession();
-    const ok = await saveBestIdeas(answer);
+    /* Resolve the id first and pass it in explicitly. `saveAnswer` closes over
+       the userId from this render, which is still null when the guest session
+       was created moments ago — that made the very first "Continue" fail. */
+    const id = userId ?? (await ensureGuestSession());
+    if (!id) {
+      setBestIdeasError("Still connecting — tap Continue again in a moment.");
+      return;
+    }
+    const ok = await saveBestIdeas(answer, id);
     if (ok && mode === "join") {
       setJoinStep("details");
     }
@@ -566,7 +580,9 @@ const Index = () => {
           )}
         </AnimatePresence>
 
-        {/* Feature strip */}
+        {/* Feature strip. Only the lab tile navigates; the other three are
+            descriptive, so they must not render as buttons that appear
+            clickable and then do nothing. */}
         <motion.div
           initial="hidden"
           animate="show"
@@ -576,28 +592,41 @@ const Index = () => {
           }}
           className="grid w-full grid-cols-4 gap-3 text-center text-xs text-muted-foreground"
         >
-          {[
-            { icon: <Puzzle   className="h-5 w-5 text-primary mx-auto" />,              label: "Drag & Drop" },
-            { icon: <Users    className="h-5 w-5 text-secondary mx-auto" />,            label: "Multiplayer" },
-            { icon: <Trophy   className="h-5 w-5 text-accent mx-auto" />,              label: "Leaderboard" },
-            { icon: <BookOpen className="h-5 w-5 text-stage-elaboration mx-auto" />,   label: "8‑Puzzle Lab", href: "/lab07/game" },
-          ].map((f) => (
+          {(
+            [
+              { icon: <Puzzle className="h-5 w-5 text-primary mx-auto" />, label: "Drag & Drop" },
+              { icon: <Users className="h-5 w-5 text-secondary mx-auto" />, label: "Multiplayer" },
+              { icon: <Trophy className="h-5 w-5 text-accent mx-auto" />, label: "Leaderboard" },
+              {
+                icon: <BookOpen className="h-5 w-5 text-stage-elaboration mx-auto" />,
+                label: "8‑Puzzle Lab",
+                href: "/lab07/game",
+              },
+            ] as Array<{ icon: ReactNode; label: string; href?: string }>
+          ).map((f) => (
             <motion.div
               key={f.label}
               variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
               className="flex flex-col items-center gap-1"
             >
-              <motion.button
-                type="button"
-                whileHover={{ y: -3, scale: 1.06 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => f.href && navigate(f.href)}
-                className="flex flex-col items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px] touch-manipulation"
-                aria-label={f.href ? `Go to ${f.label}` : f.label}
-              >
-                {f.icon}
-                <span>{f.label}</span>
-              </motion.button>
+              {f.href ? (
+                <motion.button
+                  type="button"
+                  whileHover={{ y: -3, scale: 1.06 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate(f.href!)}
+                  className="flex flex-col items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px] touch-manipulation"
+                  aria-label={`Go to ${f.label}`}
+                >
+                  {f.icon}
+                  <span>{f.label}</span>
+                </motion.button>
+              ) : (
+                <div className="flex flex-col items-center gap-1 py-2 text-xs text-muted-foreground">
+                  {f.icon}
+                  <span>{f.label}</span>
+                </div>
+              )}
             </motion.div>
           ))}
         </motion.div>

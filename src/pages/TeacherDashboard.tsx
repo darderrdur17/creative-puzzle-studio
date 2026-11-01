@@ -16,14 +16,30 @@ import { useTeacherAuth } from "@/hooks/useTeacherAuth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { JoinQRCode } from "@/components/JoinQRCode";
 import { supabase } from "@/integrations/supabase/client";
+import { copyTextToClipboard } from "@/lib/clipboard";
 import { toast } from "sonner";
+
+/**
+ * RFC-4180 CSV cell.
+ *
+ * Two problems with the previous naive `"${nickname}"`:
+ *  1. an embedded double quote shifted every later column;
+ *  2. a nickname starting with = + - @ or a tab is executed as a formula by
+ *     Excel and Google Sheets — CSV injection from untrusted student input.
+ */
+function csvCell(value: string | number): string {
+  let text = String(value);
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
+}
 
 const TeacherDashboard = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const { userId } = useAnonymousAuth();
   const { displayName: teacherName, signOut: teacherSignOut } = useTeacherAuth();
-  const { session, players, currentPlayer, endGame, togglePause } = useGameSession(sessionId ?? null, userId);
+  const { session, players, currentPlayer, loading, error, refetch, endGame, togglePause } =
+    useGameSession(sessionId ?? null, userId);
   const [broadcastMsg, setBroadcastMsg] = useState("");
   const [sending, setSending] = useState(false);
   const [joinLinkCopied, setJoinLinkCopied] = useState(false);
@@ -32,16 +48,13 @@ const TeacherDashboard = () => {
     ? `${window.location.origin}/?code=${session?.code ?? ""}`
     : "";
 
-  const copyJoinLink = () => {
+  const copyJoinLink = async () => {
     if (!joinLink) return;
-    navigator.clipboard.writeText(joinLink).catch(() => {
-      const el = document.createElement("textarea");
-      el.value = joinLink;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand("copy");
-      document.body.removeChild(el);
-    });
+    const ok = await copyTextToClipboard(joinLink);
+    if (!ok) {
+      toast.error("Couldn't copy automatically — select the link and copy it manually.");
+      return;
+    }
     setJoinLinkCopied(true);
     toast.success("Join link copied!");
     setTimeout(() => setJoinLinkCopied(false), 2500);
@@ -94,15 +107,15 @@ const TeacherDashboard = () => {
     const headers = ["Rank", "Nickname", "Score", "Time", "Misses", "Completed", "Late Join"];
     const rows = sorted.map((p, i) => [
       i + 1,
-      `"${p.nickname}"`,
+      p.nickname,
       p.score,
       formatTime(p.elapsed_time_ms),
       p.incorrect_attempts,
       p.completed ? "Yes" : "No",
       isLateJoiner(p.created_at) ? "Yes" : "No",
     ]);
-    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+    const csv = [headers.join(","), ...rows.map((r) => r.map(csvCell).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -129,15 +142,46 @@ const TeacherDashboard = () => {
     }
   };
 
-  if (!session) {
+  /* Loading and "not found" are different states. Previously a null session
+     rendered the spinner forever, so a bad link or a failed fetch left the
+     teacher staring at an empty page with no message and no way out. */
+  if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
         >
-          <Puzzle className="h-12 w-12 text-primary" />
+          <Puzzle className="h-12 w-12 text-primary" aria-hidden />
         </motion.div>
+        <span className="sr-only">Loading dashboard…</span>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-6 text-center">
+        <Puzzle className="h-14 w-14 text-muted-foreground" aria-hidden />
+        <h1 className="font-display text-xl font-bold text-foreground">Session not available</h1>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          {error ?? "This game may have ended, or the link is invalid."}
+        </p>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              /* Without this, a retry that fails again looks exactly like a
+                 button that does nothing at all. */
+              void refetch().then((ok) => {
+                if (!ok) toast.error("Still can't reach the server. Check your connection.");
+              });
+            }}
+          >
+            Try again
+          </Button>
+          <Button onClick={() => navigate("/")}>Back to Home</Button>
+        </div>
       </div>
     );
   }
@@ -269,7 +313,11 @@ const TeacherDashboard = () => {
               variant={isPaused ? "default" : "outline"}
               size="lg"
               className="w-full gap-2"
-              onClick={togglePause}
+              onClick={() => {
+                void togglePause().then((message) => {
+                  if (message) toast.error(message);
+                });
+              }}
             >
               {isPaused ? (
                 <>
@@ -447,9 +495,14 @@ const TeacherDashboard = () => {
                   );
                 })}
                 {sorted.length === 0 && (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
-                    No students connected yet
-                  </p>
+                  <div className="py-8 text-center">
+                    <p className="text-sm text-muted-foreground">No students connected yet.</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Share code{" "}
+                      <strong className="font-mono text-foreground">{session.code}</strong> or the join
+                      link above — they will appear here as they join.
+                    </p>
+                  </div>
                 )}
               </div>
             </CardContent>
@@ -461,7 +514,11 @@ const TeacherDashboard = () => {
               variant="destructive"
               size="lg"
               className="w-full gap-2"
-              onClick={endGame}
+              onClick={() => {
+                void endGame().then((message) => {
+                  if (message) toast.error(message);
+                });
+              }}
             >
               <StopCircle className="h-5 w-5" /> End Game for All Students
             </Button>

@@ -35,8 +35,13 @@ export function useBestIdeasAnswer(userId: string | null) {
   }, [userId]);
 
   const saveAnswer = useCallback(
-    async (text: string): Promise<boolean> => {
-      if (!userId) {
+    /**
+     * @param idOverride Use when the caller has just created the guest session
+     *   and the `userId` captured by this closure is still stale.
+     */
+    async (text: string, idOverride?: string | null): Promise<boolean> => {
+      const activeUserId = idOverride ?? userId;
+      if (!activeUserId) {
         setError("Still connecting — tap Continue again in a moment.");
         return false;
       }
@@ -44,7 +49,7 @@ export function useBestIdeasAnswer(userId: string | null) {
       setSaving(true);
       setError(null);
 
-      const result = await saveBestIdeasAnswer(userId, text);
+      const result = await saveBestIdeasAnswer(activeUserId, text);
       setSaving(false);
 
       if (!result.ok) {

@@ -18,6 +18,32 @@ const DIFFICULTY_LABELS: Record<string, string> = {
   very_hard: "Very Hard",
 };
 
+/* ── Leaderboard write de-duplication ────────────────────────────────────────
+   The save used to run on every mount and on every `currentPlayer` object
+   change (the realtime subscription replaces that object on any player event),
+   so revisiting, reloading or simply having a classmate score re-added the same
+   result. A score must be credited to the all-time board exactly once per
+   session per player. */
+const SAVED_PREFIX = "leaderboard-saved:";
+const savesInFlight = new Set<string>();
+
+function alreadySaved(key: string): boolean {
+  if (savesInFlight.has(key)) return true;
+  try {
+    return sessionStorage.getItem(SAVED_PREFIX + key) === "1";
+  } catch {
+    return false; // storage blocked — the in-memory guard still applies
+  }
+}
+
+function markSaved(key: string): void {
+  try {
+    sessionStorage.setItem(SAVED_PREFIX + key, "1");
+  } catch {
+    /* Non-fatal: worst case the guard is per-page-view only. */
+  }
+}
+
 const Results = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
@@ -25,48 +51,66 @@ const Results = () => {
   const { session, players, currentPlayer, loading } = useGameSession(sessionId ?? null, userId);
   const confettiFired = useRef(false);
 
-  const isGameMaster = currentPlayer?.is_game_master ?? false;
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
   const myRank = sortedPlayers.findIndex((p) => p.user_id === userId) + 1;
 
-  // Save to all-time leaderboard
+  // Save to all-time leaderboard — at most once per (session, player).
   useEffect(() => {
-    if (!currentPlayer?.completed || currentPlayer.score === 0) return;
+    const player = currentPlayer;
+    if (!player?.completed || player.score === 0) return;
+
+    const key = `${sessionId ?? "unknown"}:${player.id}`;
+    if (alreadySaved(key)) return;
+    savesInFlight.add(key);
+
     const save = async () => {
       try {
-        const { data: existing } = await supabase
+        /* `.maybeSingle()` throws when more than one row exists for a user, and
+           the throw was being swallowed — which then inserted yet another row
+           on every visit. Take the best row instead. */
+        const { data: rows, error: readErr } = await supabase
           .from("leaderboard")
           .select("*")
-          .eq("user_id", currentPlayer.user_id)
-          .maybeSingle();
+          .eq("user_id", player.user_id)
+          .order("total_score", { ascending: false })
+          .limit(1);
+
+        if (readErr) throw readErr;
+        const existing = rows?.[0];
+        const elapsed = Math.max(0, player.elapsed_time_ms);
+
         if (existing) {
-          await supabase
+          const { error: updateErr } = await supabase
             .from("leaderboard")
             .update({
-              total_score: existing.total_score + currentPlayer.score,
+              total_score: existing.total_score + player.score,
               games_played: existing.games_played + 1,
-              best_time_ms: existing.best_time_ms
-                ? Math.min(existing.best_time_ms, currentPlayer.elapsed_time_ms)
-                : currentPlayer.elapsed_time_ms,
+              best_time_ms: existing.best_time_ms ? Math.min(existing.best_time_ms, elapsed) : elapsed,
               last_played_at: new Date().toISOString(),
-              nickname: currentPlayer.nickname,
+              nickname: player.nickname,
             })
             .eq("id", existing.id);
+          if (updateErr) throw updateErr;
         } else {
-          await supabase.from("leaderboard").insert({
-            user_id: currentPlayer.user_id,
-            nickname: currentPlayer.nickname,
-            total_score: currentPlayer.score,
+          const { error: insertErr } = await supabase.from("leaderboard").insert({
+            user_id: player.user_id,
+            nickname: player.nickname,
+            total_score: player.score,
             games_played: 1,
-            best_time_ms: currentPlayer.elapsed_time_ms,
+            best_time_ms: elapsed,
           });
+          if (insertErr) throw insertErr;
         }
+
+        markSaved(key);
       } catch (err) {
         console.warn("Leaderboard save failed:", err);
+      } finally {
+        savesInFlight.delete(key);
       }
     };
-    save();
-  }, [currentPlayer]);
+    void save();
+  }, [currentPlayer, sessionId]);
 
   // Fire confetti for top 3 finishers
   useEffect(() => {

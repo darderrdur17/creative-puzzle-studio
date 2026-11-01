@@ -5,6 +5,27 @@ import { Puzzle, Target, Timer, Star } from "lucide-react";
 
 const STORAGE_KEY = "puzzle-instructions-seen";
 
+/* localStorage throws in Safari private mode, in some embedded webviews, and
+   whenever a browser is configured to block site data. Reading it unguarded
+   inside an effect would crash the first render of the game, so both directions
+   are wrapped. On failure we fall back to "not seen yet" and simply show the
+   modal again next time. */
+function hasSeenInstructions(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function markInstructionsSeen(): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, "true");
+  } catch {
+    /* Nothing to do — the modal will simply reappear on the next visit. */
+  }
+}
+
 interface InstructionsModalProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -19,13 +40,12 @@ export function InstructionsModal({ open: externalOpen, onOpenChange }: Instruct
 
   useEffect(() => {
     if (!isControlled) {
-      const seen = localStorage.getItem(STORAGE_KEY);
-      if (!seen) setInternalOpen(true);
+      if (!hasSeenInstructions()) setInternalOpen(true);
     }
   }, [isControlled]);
 
   const handleClose = () => {
-    localStorage.setItem(STORAGE_KEY, "true");
+    markInstructionsSeen();
     if (isControlled) {
       onOpenChange?.(false);
     } else {
@@ -84,7 +104,7 @@ export function InstructionsModal({ open: externalOpen, onOpenChange }: Instruct
                 <Timer className="h-4 w-4" /> Scoring
               </h4>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                Score depends on speed and accuracy. Each miss costs points. Difficulty scales: Easy = smaller grid, Hard = larger grid. Some quote pieces are decoys (wrong) — avoid placing them!
+                Score depends on speed and accuracy — every miss costs points, and placing a decoy piece costs extra. Difficulty grows from a 4×3 grid with no time limit up to a 4×6 grid with a 90-second limit. Chain correct placements into combos for bonus XP!
               </p>
             </div>
           </div>
