@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Puzzle, Users, Trophy, ArrowRight, BookOpen,
-  LogIn, Sparkles, LogOut, PlusCircle,
+  LogIn, Sparkles, LogOut, PlusCircle, WifiOff,
 } from "lucide-react";
 import { AppLogo } from "@/components/AppLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -37,6 +37,40 @@ const SPARKLES = [
   { top: "86%", left: "78%", size: 3, delay: "1.2s", dur: "4.3s" },
 ];
 
+/**
+ * Shown when the anonymous guest session could not be created — i.e. the
+ * backend is unreachable.
+ *
+ * Without this, a dead backend produced the worst possible failure: the
+ * best-ideas form never resolves, so `Join a Game` stays disabled forever with
+ * no explanation on screen. A student has no way to tell "broken app" from
+ * "slow app" and just leaves. Name the cause and offer the retry.
+ */
+const ConnectionNotice = ({ onRetry }: { onRetry: () => void }) => (
+  <div
+    role="alert"
+    className="w-full rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-left"
+  >
+    <p className="flex items-center gap-2 text-sm font-semibold text-destructive">
+      <WifiOff className="h-4 w-4 shrink-0" aria-hidden />
+      Can&rsquo;t reach the game server
+    </p>
+    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+      Joining a game needs a connection. Check your internet, then try again —
+      students don&rsquo;t need an account.
+    </p>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="mt-3 min-h-[44px] touch-manipulation border-destructive/40 text-destructive hover:bg-destructive/10"
+      onClick={onRetry}
+    >
+      Try again
+    </Button>
+  </div>
+);
+
 const Index = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -67,7 +101,13 @@ const Index = () => {
   } = useBestIdeasAnswer(userId);
 
   const isStudent = !teacherUser;
-  const needsBestIdeasAnswer = isStudent && !bestIdeasLoading && !hasBestIdeas;
+  /* A failed guest sign-in leaves `userId` null, which makes `useBestIdeasAnswer`
+     settle on "no saved answer" — indistinguishable from a first-time visitor.
+     Detect the difference explicitly so we can explain it instead of silently
+     disabling the primary action. */
+  const backendUnavailable = isStudent && !authLoading && !!authError;
+  const needsBestIdeasAnswer =
+    isStudent && !bestIdeasLoading && !hasBestIdeas && !backendUnavailable;
   const guestActionsBlocked = isStudent && authLoading;
 
   /* `teacherName` arrives asynchronously, so a lazy useState initialiser always
@@ -356,6 +396,10 @@ const Index = () => {
               transition={{ duration: 0.22 }}
               className="flex w-full flex-col gap-3"
             >
+              {backendUnavailable && (
+                <ConnectionNotice onRetry={() => void retryAuth()} />
+              )}
+
               {needsBestIdeasAnswer && (
                 <BestIdeasQuestion
                   onSubmit={handleBestIdeasSubmit}
@@ -369,7 +413,9 @@ const Index = () => {
               <Button
                 size="lg"
                 className="shine-hover w-full gap-2 text-base shadow-lg shadow-primary/20 min-h-[48px] touch-manipulation"
-                disabled={needsBestIdeasAnswer || guestActionsBlocked}
+                disabled={
+                  needsBestIdeasAnswer || guestActionsBlocked || backendUnavailable
+                }
                 onClick={() => setMode("join")}
               >
                 <Users className="h-5 w-5" />
@@ -479,12 +525,16 @@ const Index = () => {
               transition={{ duration: 0.22 }}
               className="w-full space-y-3"
             >
-              <BestIdeasQuestion
-                onSubmit={handleBestIdeasSubmit}
-                submitting={bestIdeasSaving}
-                disabled={guestActionsBlocked}
-                error={bestIdeasError}
-              />
+              {backendUnavailable ? (
+                <ConnectionNotice onRetry={() => void retryAuth()} />
+              ) : (
+                <BestIdeasQuestion
+                  onSubmit={handleBestIdeasSubmit}
+                  submitting={bestIdeasSaving}
+                  disabled={guestActionsBlocked}
+                  error={bestIdeasError}
+                />
+              )}
               <Button
                 variant="ghost"
                 className="w-full min-h-[48px] touch-manipulation"

@@ -167,6 +167,14 @@ describe("Leaderboard retry", () => {
     await screen.findByText(/Couldn't load the leaderboard/i);
     expect(mocks.toastError).not.toHaveBeenCalled();
   });
+
+  it("does not leak the raw fetch error to the user", async () => {
+    await renderLeaderboard();
+    await screen.findByText(/Couldn't load the leaderboard/i);
+    // "TypeError: Failed to fetch" means nothing to a teacher.
+    expect(screen.queryByText(/Failed to fetch/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Check your connection and try again/i)).toBeInTheDocument();
+  });
 });
 
 describe("Teacher dashboard retry", () => {

@@ -204,12 +204,17 @@ leaderboard write de-duplication, CSV escaping, the retry paths, and the board i
 | `src/test/jigsaw-flow.test.tsx` | A full playthrough of the real board: all four keys placed, the 2.2 s phase transition, every quote matched to its column, wrong taps rejected, decoys refused in every column, and `onCompleted` firing exactly once |
 | `src/test/update-score.test.ts` | Row recovery when the player hasn't loaded, success/failure reporting, the timeout write guard |
 | `src/test/retry-feedback.test.tsx` | Error states and retry toasts on the leaderboard and dashboard |
+| `src/test/backend-down.test.tsx` | The landing page when the backend is unreachable: it must name the failure rather than disable `Join a Game` silently |
 | `src/test/csv.test.ts` | RFC-4180 quoting and CSV-injection guarding |
 | `src/lib/bestIdeasAnswer.test.ts` | Answer normalisation |
 
 Test config lives in `vitest.config.ts` (Vitest ignores a `test` block in `vite.config.ts` when that
 file exists). `src/test/setup.ts` stubs `matchMedia` and `scrollTo`, both of which jsdom leaves
 unimplemented and Framer Motion calls during layout.
+
+Timeouts are raised to 20 s. jsdom has no layout engine, so mounting the landing page (Framer Motion,
+lazy routes) can take several seconds, and a test that times out mid-render resolves *after* cleanup
+and fails every subsequent test in the same file — one slow render used to cascade into six failures.
 
 ## Deployment
 
@@ -236,6 +241,11 @@ To verify a live deployment rather than the local build:
 ```bash
 SMOKE_BASE_URL=https://creative-puzzle-studio.vercel.app npm run smoke
 ```
+
+The suite assumes the target has **no reachable Supabase project** — true of both the local build and
+the current deployment — and asserts that the landing page names the failure instead of dead-ending.
+Once an origin is wired to a live project, set `SMOKE_BACKEND_UP=1` to check the healthy path (the
+best-ideas question) instead.
 
 ## Project structure
 

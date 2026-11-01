@@ -16,6 +16,7 @@
  *   CHROME_BIN       path to a Chrome/Chromium binary
  *   SMOKE_BASE_URL   test a deployed origin instead of local dist/
  *                    (e.g. SMOKE_BASE_URL=https://creative-puzzle-studio.vercel.app)
+ *   SMOKE_BACKEND_UP set to 1 when the origin has a reachable Supabase project
  *   SMOKE_VERBOSE=1  stream progress
  */
 
@@ -321,6 +322,48 @@ try {
   check("/ no uncaught exceptions", exceptions.length === 0, exceptions.slice(0, 2).join(" | "));
   const landingErrors = consoleErrors.filter((e) => !isBackendNoise(e));
   check("/ no unexpected console errors", landingErrors.length === 0, landingErrors.slice(0, 3).join(" | "));
+
+  /* The dead end this check exists to prevent: `Join a Game` rendered disabled
+     with nothing on screen explaining why. When the guest session could not be
+     created, the page used to show the best-ideas form anyway — whose Continue
+     button could never save — and disable the primary action silently. A
+     student could not tell a broken app from a slow one.
+     The session is created asynchronously and retried, so poll until the page
+     settles into one of its two terminal states. */
+  const readGate = () => evaluate(`(() => {
+    const join = [...document.querySelectorAll("button")]
+      .find((b) => /join a game/i.test(b.textContent || ""));
+    const text = document.body.textContent || "";
+    return {
+      found: !!join,
+      disabled: join ? join.disabled : null,
+      notice: /reach the game server/i.test(text),
+      form: /where do you get your best ideas/i.test(text),
+    };
+  })()`);
+
+  let gate = await readGate();
+  for (let i = 0; i < 40 && gate.found && gate.disabled && !gate.notice && !gate.form; i++) {
+    await new Promise((r) => setTimeout(r, 250));
+    gate = await readGate();
+  }
+
+  check(
+    "disabled Join a Game is always explained",
+    gate.found && (!gate.disabled || gate.notice || gate.form),
+    JSON.stringify(gate),
+  );
+
+  /* No smoke environment has a reachable Supabase project — the build ships a
+     dead project ref and CI passes placeholders. Set SMOKE_BACKEND_UP=1 when
+     testing an origin wired to a live project, and the two backend-down checks
+     are replaced by their healthy-path counterpart. */
+  if (process.env.SMOKE_BACKEND_UP === "1") {
+    check("/ asks the best-ideas question", gate.form, JSON.stringify(gate));
+  } else {
+    check("/ names the unreachable backend", gate.notice, JSON.stringify(gate));
+    check("/ hides the best-ideas form that can never save", !gate.form, JSON.stringify(gate));
+  }
 
   // 2 — leaderboard degrades without a backend
   r = await goto("/leaderboard");

@@ -97,7 +97,11 @@ const Leaderboard = () => {
             ) : error ? (
               <div className="py-8 text-center">
                 <p className="text-sm text-destructive">Couldn't load the leaderboard.</p>
-                <p className="mt-1 text-xs text-muted-foreground">{error}</p>
+                {/* The raw error ("TypeError: Failed to fetch") means nothing to a
+                    teacher; keep it on the element for debugging instead. */}
+                <p className="mt-1 text-xs text-muted-foreground" title={error}>
+                  Check your connection and try again.
+                </p>
                 <Button
                   variant="outline"
                   size="sm"
