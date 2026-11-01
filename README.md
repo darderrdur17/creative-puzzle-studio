@@ -129,7 +129,7 @@ Landing and 404 load eagerly; every other route is code-split with `React.lazy`.
 | Toasts | Sonner |
 | Tests | Vitest 3 + Testing Library (jsdom) |
 
-The dependency list is deliberately small: 21 runtime packages. Only the twelve `components/ui/`
+The dependency list is deliberately small: 20 runtime packages. Only the twelve `components/ui/`
 primitives the app actually renders are kept — the rest of the shadcn scaffold was removed along
 with the packages only it used. Re-add a primitive with
 `npx shadcn@latest add <name>` if a future screen needs one.
