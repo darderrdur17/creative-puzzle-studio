@@ -13,7 +13,9 @@
  *   npm run build && npm run smoke
  *
  * Environment:
- *   CHROME_BIN   path to a Chrome/Chromium binary
+ *   CHROME_BIN       path to a Chrome/Chromium binary
+ *   SMOKE_BASE_URL   test a deployed origin instead of local dist/
+ *                    (e.g. SMOKE_BASE_URL=https://creative-puzzle-studio.vercel.app)
  *   SMOKE_VERBOSE=1  stream progress
  */
 
@@ -28,6 +30,10 @@ import { tmpdir } from "node:os";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIST = join(HERE, "..", "dist");
 const VERBOSE = process.env.SMOKE_VERBOSE === "1";
+
+/* When SMOKE_BASE_URL is set we skip the local server entirely and drive the
+   deployed origin, which is the only way to prove what users actually get. */
+const DEPLOYED = process.env.SMOKE_BASE_URL?.replace(/\/+$/, "") || null;
 
 const CHROME =
   process.env.CHROME_BIN ??
@@ -49,11 +55,13 @@ const MIME = {
 
 /* ---------------------------------------------------------------- preflight */
 
-try {
-  await access(join(DIST, "index.html"), constants.R_OK);
-} catch {
-  console.error(`No build found at ${DIST}\nRun \`npm run build\` first.`);
-  process.exit(2);
+if (!DEPLOYED) {
+  try {
+    await access(join(DIST, "index.html"), constants.R_OK);
+  } catch {
+    console.error(`No build found at ${DIST}\nRun \`npm run build\` first.`);
+    process.exit(2);
+  }
 }
 
 try {
@@ -67,30 +75,38 @@ try {
 
 /* ------------------------------------------------------------ static server */
 
-const server = createServer(async (req, res) => {
-  const url = decodeURIComponent(req.url.split("?")[0]);
-  let file = join(DIST, url);
-  // SPA fallback: every unknown path serves index.html, mirroring the rewrite
-  // rule a static host needs for deep links.
-  if (url === "/" || !extname(url)) file = join(DIST, "index.html");
-  try {
-    const body = await readFile(file);
-    res.writeHead(200, {
-      "content-type": MIME[extname(file)] ?? "application/octet-stream",
-    });
-    res.end(body);
-  } catch {
+let server = null;
+let BASE;
+
+if (DEPLOYED) {
+  BASE = DEPLOYED;
+  log(`testing deployed origin ${BASE}`);
+} else {
+  server = createServer(async (req, res) => {
+    const url = decodeURIComponent(req.url.split("?")[0]);
+    let file = join(DIST, url);
+    // SPA fallback: every unknown path serves index.html, mirroring the rewrite
+    // rule a static host needs for deep links.
+    if (url === "/" || !extname(url)) file = join(DIST, "index.html");
     try {
-      res.writeHead(200, { "content-type": "text/html" });
-      res.end(await readFile(join(DIST, "index.html")));
+      const body = await readFile(file);
+      res.writeHead(200, {
+        "content-type": MIME[extname(file)] ?? "application/octet-stream",
+      });
+      res.end(body);
     } catch {
-      res.writeHead(404).end("not found");
+      try {
+        res.writeHead(200, { "content-type": "text/html" });
+        res.end(await readFile(join(DIST, "index.html")));
+      } catch {
+        res.writeHead(404).end("not found");
+      }
     }
-  }
-});
-await new Promise((r) => server.listen(0, "127.0.0.1", r));
-const PORT = server.address().port;
-log(`serving dist on 127.0.0.1:${PORT}`);
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  BASE = `http://127.0.0.1:${server.address().port}`;
+  log(`serving dist on ${BASE}`);
+}
 
 /* ------------------------------------------------------------- chrome + cdp */
 
@@ -183,7 +199,7 @@ async function shutdown(code) {
   try { if (targetId) await cdp?.send("Target.closeTarget", { targetId }); } catch {}
   try { cdp?.ws.close(); } catch {}
   try { chrome.kill("SIGKILL"); } catch {}
-  if (!serverClosed) { serverClosed = true; try { server.close(); } catch {} }
+  if (!serverClosed) { serverClosed = true; try { server?.close(); } catch {} }
   try { await rm(PROFILE, { recursive: true, force: true }); } catch {}
   process.exit(code);
 }
@@ -251,7 +267,7 @@ try {
   async function goto(path) {
     consoleErrors = [];
     exceptions = [];
-    await cdp.send("Page.navigate", { url: `http://127.0.0.1:${PORT}${path}` }, S);
+    await cdp.send("Page.navigate", { url: `${BASE}${path}` }, S);
     /* Poll for the app to mount instead of sleeping a fixed amount: a cold
        single-process Chrome can take seconds to paint the first route, and a
        fixed delay produced false "0 buttons" readings. */
@@ -324,7 +340,14 @@ try {
 
   // 4 — 404
   r = await goto("/this-route-does-not-exist");
-  check("unknown route shows 404", /not found|404|page.*exist/i.test(r.text), r.text.slice(0, 90).replace(/\n/g, " "));
+  /* Must match OUR NotFound copy, not the host's 404 page. A loose
+     /not found|page.*exist/ test passes on Vercel's own 404 screen, which is
+     how a missing SPA rewrite stayed invisible. */
+  check(
+    "unknown route renders the app's 404",
+    /oops!?\s*page not found/i.test(r.text) && /return to home/i.test(r.text),
+    r.text.slice(0, 90).replace(/\n/g, " "),
+  );
   check("unknown route no uncaught exceptions", exceptions.length === 0, exceptions.slice(0, 2).join(" | "));
 
   // 5 — game route with a bogus session id must not crash

@@ -213,17 +213,29 @@ unimplemented and Framer Motion calls during layout.
 
 ## Deployment
 
-The output in `dist/` is a static single-page app.
+The output in `dist/` is a static single-page app. It is deployed at
+[creative-puzzle-studio.vercel.app](https://creative-puzzle-studio.vercel.app), auto-deployed from
+`main` by Vercel.
 
 1. `npm ci && npm run build`
 2. Publish `dist/` to any static host.
-3. **Configure a rewrite so every path serves `index.html`.** Without it, deep links such as
-   `/results/ABC123` return 404 from the host. On Netlify: `/* /index.html 200`. On Vercel, a
-   catch-all rewrite to `/index.html`. On GitHub Pages, a `404.html` copy of `index.html`.
+3. **A rewrite so every path serves `index.html` is mandatory.** Without it, deep links such as
+   `/results/ABC123` return the *host's* 404 page instead of the app. Vercel picks this up from the
+   `vercel.json` in this repo, which also marks `/assets/*` immutable. On Netlify use
+   `/* /index.html 200`; on GitHub Pages, a `404.html` copy of `index.html`.
+   > This is not theoretical — the site shipped for months with only `/` working, because the
+   > rewrite was documented but never configured. `npm run smoke` now catches it: the 404 assertion
+   > matches the app's own "Oops! Page not found" copy, so a host-level 404 fails the check.
 4. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in the host's build environment
    **before** building — they are baked in at build time, not read at runtime.
 5. Add the deployed origin to Supabase **Authentication → URL Configuration** so email confirmation
    links point back at your site.
+
+To verify a live deployment rather than the local build:
+
+```bash
+SMOKE_BASE_URL=https://creative-puzzle-studio.vercel.app npm run smoke
+```
 
 ## Project structure
 
