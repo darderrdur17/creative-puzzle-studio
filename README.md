@@ -1,10 +1,15 @@
 # Creativity is… — a jigsaw puzzle game about the creative process
 
+**Live app: [creative-puzzle-studio.vercel.app](https://creative-puzzle-studio.vercel.app)**
+
 A classroom-ready, real-time puzzle game for teaching the four stages of creativity. Students
 assemble an elephant illustration by placing stage keys and matching quotes; a teacher runs the
 session from a live dashboard.
 
 Built with React 18, TypeScript, Vite, Tailwind CSS and Supabase (Postgres, Realtime, Auth).
+
+> The deployment above is a static build with no Supabase project attached: every page loads and the
+> 8-puzzle lab is playable, but joining a session needs a database. See [Deployment](#deployment).
 
 ![Landing page, light theme](deliverables/design-polish/landing-light-1440.webp)
 
