@@ -14,7 +14,8 @@ dist-ssr
 
 # Environment files hold the Supabase project URL and anon key. They are
 # environment-specific and must never be committed — `.env.example` is the
-# documented template. (`.env` was tracked historically; see README §Security.)
+# documented template. (`.env` was tracked historically; SECURITY.md explains
+# what that exposed and why the anon key is public by design.)
 .env
 .env.*
 !.env.example

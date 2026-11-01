@@ -124,7 +124,7 @@ Landing and 404 load eagerly; every other route is code-split with `React.lazy`.
 | Build | Vite 5.4 |
 | Styling | Tailwind CSS 3.4, shadcn/ui (Radix primitives) |
 | Animation | Framer Motion 12 |
-| Routing | React Router 6 |
+| Routing | React Router 7 |
 | Backend | Supabase — Postgres, Realtime (`postgres_changes`), Auth |
 | Toasts | Sonner |
 | Tests | Vitest 3 + Testing Library (jsdom) |
@@ -185,6 +185,7 @@ teacher accounts for actual classroom use.
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm test` | Full Vitest suite, single run |
 | `npm run test:watch` | Vitest in watch mode |
+| `npm run smoke` | Browser smoke test against `dist/` in headless Chrome (needs `npm run build` first) |
 | `npm run db:seed-demo` | Create the demo teacher (needs the service-role key) |
 | `npm run supabase:push` | Push migrations to the linked project |
 
@@ -254,20 +255,20 @@ None of these are imported by `src/`; deleting them would not affect the build.
 
 ## Security notes
 
-- **`.env` is not committed.** It was tracked historically, so if you cloned before that change the
-  anon key and project URL are in your local history. They are public-by-design (they ship in the
-  client bundle), and row-level security is what protects the data — but rotate the anon key in the
-  Supabase dashboard if the project is public and the key has been abused.
-- Row-level security is enabled on every table; players may read sessions they belong to and update
-  only their own row.
+**See [`SECURITY.md`](SECURITY.md) for the full picture** — what the Supabase publishable key does
+and does not grant, why rotating it does not hide it, and the contributor rule that every new table
+ships with RLS and its policies in the same migration.
+
+- **`.env` is not committed.** It was tracked before commit `8d66b33`, so older clones carry the
+  project URL and anon key in their history. Both are public by design — they ship in the client
+  bundle of every build — so row-level security is what actually protects the data.
+- Row-level security is enabled on all four tables (25 policies); players may read sessions they
+  belong to and update only their own row.
 - Nicknames are user input and are escaped on CSV export (quoted per RFC 4180 and prefixed against
   spreadsheet formula injection).
-- **Known advisories.** `npm audit --omit=dev` reports two moderate findings against `react-router`
-  (open redirect via a backslash in `<Link>`/`useNavigate`, and constructor injection in
-  `deserializeErrors()` during SSR hydration). Both are fixed only in React Router 7.18+, a major
-  upgrade. Neither is reachable here: every navigation target is a hard-coded internal path, and the
-  app has no SSR. The rest of the production tree is clean, and `ws` is pinned via an `overrides`
-  entry to a patched 8.22.x because `@supabase/realtime-js` ships an older copy.
+- **`npm audit --omit=dev` is clean.** React Router is on 7.18.5, which resolves both advisories
+  that previously required a major upgrade. `ws` is pinned via an `overrides` entry to a patched
+  8.22.x because `@supabase/realtime-js` ships an older copy. Dev-only advisories are cleared too.
 
 ## License
 

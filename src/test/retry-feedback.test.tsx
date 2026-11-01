@@ -103,7 +103,6 @@ async function renderLeaderboard() {
       <ThemeProvider>
         <MemoryRouter
           initialEntries={["/leaderboard"]}
-          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
         >
           <Leaderboard />
         </MemoryRouter>
@@ -121,7 +120,6 @@ async function renderDashboard() {
       <ThemeProvider>
         <MemoryRouter
           initialEntries={["/dashboard/session-1"]}
-          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
         >
           <Routes>
             <Route path="/dashboard/:sessionId" element={<TeacherDashboard />} />

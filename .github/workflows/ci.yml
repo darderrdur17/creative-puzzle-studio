@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel a superseded run on the same ref rather than paying for both.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # `npm ci` rather than `npm install`: it fails loudly if package.json and
+      # package-lock.json have drifted, which is a real class of bug.
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          # The build inlines VITE_* variables. These are placeholders: the
+          # bundle must compile without a live Supabase project, and no test
+          # or build step talks to the network.
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: placeholder-anon-key
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+
+# The browser smoke check (`npm run smoke`) is deliberately NOT here: it needs
+# a real Chrome binary and a headless single-process launch, which makes it
+# flaky on shared runners. Run it locally before a release.
