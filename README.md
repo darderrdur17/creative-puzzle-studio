@@ -266,14 +266,16 @@ scripts/            demo-user seed script
 
 This repository also carries material that is **not** part of the built app, kept for reference:
 
-- `JigsawPuzzle-main/` — a Unity jigsaw prototype used as a design reference. Unlicense (public
-  domain); not compiled or shipped by the web build.
 - `puzzle_design 2/` — early design specification, asset inventory and an abandoned prototype.
 - `deliverables/` — QA reports and screenshots from the review passes.
 - `JIGSAW_PUZZLE_*.md`, `MOBILE_OPTIMIZATION.md`, `TESTING_GUIDE.md` — historical design and testing
   notes. `README.md` is the current description of the app.
 
 None of these are imported by `src/`; deleting them would not affect the build.
+
+A Unity jigsaw prototype (`JigsawPuzzle-main/`, 275 files, ~49 MB) was used as a design reference
+during development and has since been removed; it was never compiled or shipped by the web build. It
+remains in git history if it is ever needed again.
 
 ## Security notes
 
@@ -294,5 +296,7 @@ ships with RLS and its policies in the same migration.
 
 ## License
 
-No license is granted. The repository is marked `UNLICENSED` in `package.json`; add a license file
-if you intend to distribute it. `JigsawPuzzle-main/` carries its own Unlicense and is unaffected.
+[MIT](LICENSE) © 2026 darderrdur17. Use it, fork it, ship it, sell it — keep the copyright notice.
+
+The bundled artwork in `src/assets/` has no recorded provenance in this repository. If it originated
+elsewhere, that file carries its own terms and the MIT grant above does not extend to it.

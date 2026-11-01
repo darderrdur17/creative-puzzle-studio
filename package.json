@@ -63,7 +63,7 @@
     "vitest": "^3.2.4"
   },
   "description": "A classroom-ready, real-time creativity jigsaw puzzle game built with React, TypeScript and Supabase.",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/darderrdur17/creative-puzzle-studio.git"
