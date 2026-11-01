@@ -38,3 +38,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Supabase CLI local state (project ref, pooler URL, version cache).
+# Written by any `supabase` command; machine-specific, never source.
+supabase/.temp/
