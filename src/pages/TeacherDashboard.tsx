@@ -17,21 +17,13 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { JoinQRCode } from "@/components/JoinQRCode";
 import { supabase } from "@/integrations/supabase/client";
 import { copyTextToClipboard } from "@/lib/clipboard";
+import { buildCsv } from "@/lib/csv";
 import { toast } from "sonner";
 
 /**
- * RFC-4180 CSV cell.
- *
- * Two problems with the previous naive `"${nickname}"`:
- *  1. an embedded double quote shifted every later column;
- *  2. a nickname starting with = + - @ or a tab is executed as a formula by
- *     Excel and Google Sheets — CSV injection from untrusted student input.
+ * CSV export is RFC-4180 quoted and formula-injection guarded — see
+ * `src/lib/csv.ts` for the implementation and `csv.test.ts` for the cases.
  */
-function csvCell(value: string | number): string {
-  let text = String(value);
-  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
-  return `"${text.replace(/"/g, '""')}"`;
-}
 
 const TeacherDashboard = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -114,7 +106,7 @@ const TeacherDashboard = () => {
       p.completed ? "Yes" : "No",
       isLateJoiner(p.created_at) ? "Yes" : "No",
     ]);
-    const csv = [headers.join(","), ...rows.map((r) => r.map(csvCell).join(","))].join("\n");
+    const csv = buildCsv(headers, rows);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

@@ -5,6 +5,10 @@ const NotFound = () => {
   const location = useLocation();
 
   useEffect(() => {
+    /* Intentional diagnostic logging (QA finding L13). Unknown routes are the
+       one place a console entry is genuinely useful — it is how you notice a
+       broken link in the wild. Deliberately NOT removed: it is not noise, it is
+       the only signal that someone reached a URL the app does not serve. */
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
   }, [location.pathname]);
 

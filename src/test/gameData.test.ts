@@ -15,6 +15,7 @@ import {
   injectStudentIncubationQuote,
   type CreativityStage,
 } from "@/lib/gameData";
+import { getGridConfig } from "@/lib/jigsawGrid";
 
 /* ────────────────────────────────────────────────────────────────────────────
    Scoring
@@ -172,8 +173,36 @@ describe("getLevelGridConfig", () => {
   });
 });
 
-describe("difficulty → grid consistency", () => {
-  /* The descriptions are user-facing promises. If someone retunes the grid and
+/* ────────────────────────────────────────────────────────────────────────────
+   The live path (finding M3)
+
+   `GameEnhanced` does not call `getLevelGridConfig` directly — it calls
+   `getGridConfig(difficulty)`. Testing only the delegate would leave the wiring
+   unproven, so assert the function the game actually uses.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+describe("getGridConfig (the function the game calls)", () => {
+  it("gives each difficulty the grid its description promises", () => {
+    expect(getGridConfig("easy")).toMatchObject({ cols: 4, rows: 3 });
+    expect(getGridConfig("medium")).toMatchObject({ cols: 4, rows: 4 });
+    expect(getGridConfig("hard")).toMatchObject({ cols: 4, rows: 5 });
+    expect(getGridConfig("very_hard")).toMatchObject({ cols: 4, rows: 6 });
+  });
+
+  it("defaults an unknown difficulty to the medium grid", () => {
+    expect(getGridConfig("bogus")).toEqual(getGridConfig("medium"));
+  });
+
+  it("produces a board big enough for every key plus its quote slots", () => {
+    for (const difficulty of ["easy", "medium", "hard", "very_hard"]) {
+      const cfg = getGridConfig(difficulty);
+      expect(cfg.totalPieces).toBe(cfg.cols * cfg.rows);
+      expect(cfg.totalToPlace).toBe(cfg.totalPieces);
+    }
+  });
+});
+
+describe("difficulty → grid consistency", () => {  /* The descriptions are user-facing promises. If someone retunes the grid and
      forgets the copy, this fails rather than shipping a lie. */
   it("each difficulty description names its real grid size", () => {
     for (const [difficulty, config] of Object.entries(DIFFICULTY_CONFIG)) {

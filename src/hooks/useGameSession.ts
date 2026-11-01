@@ -271,13 +271,19 @@ export function useGameSession(sessionId: string | null, userId: string | null) 
 
       if (!playerId) {
         if (!sessionId || !userId) return false;
-        const { data } = await supabase
+        /* `.limit(1)` rather than `.maybeSingle()`. The unique constraint on
+           (session_id, user_id) makes a duplicate impossible in a healthy
+           database, but `maybeSingle()` THROWS if one ever exists — a restored
+           backup, a dropped constraint, a hand-inserted row. That throw would
+           silently drop the score, which is exactly the H3 failure. Reading the
+           first row cannot throw. */
+        const { data: rows } = await supabase
           .from("game_players")
           .select("id")
           .eq("session_id", sessionId)
           .eq("user_id", userId)
-          .maybeSingle();
-        playerId = data?.id ?? null;
+          .limit(1);
+        playerId = rows?.[0]?.id ?? null;
       }
       if (!playerId) return false;
 
