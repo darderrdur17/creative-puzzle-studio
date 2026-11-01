@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Environment files hold the Supabase project URL and anon key. They are
+# environment-specific and must never be committed — `.env.example` is the
+# documented template. (`.env` was tracked historically; see README §Security.)
+.env
+.env.*
+!.env.example
+
 # Vite/Vitest write a transient <config>.timestamp-<id>.mjs next to the config
 # while loading it. They are deleted on a clean exit, so any that survive are
 # leftovers from an interrupted build — never commit them.

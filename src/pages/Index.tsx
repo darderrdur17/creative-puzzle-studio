@@ -594,7 +594,7 @@ const Index = () => {
         >
           {(
             [
-              { icon: <Puzzle className="h-5 w-5 text-primary mx-auto" />, label: "Drag & Drop" },
+              { icon: <Puzzle className="h-5 w-5 text-primary mx-auto" />, label: "Tap to Place" },
               { icon: <Users className="h-5 w-5 text-secondary mx-auto" />, label: "Multiplayer" },
               { icon: <Trophy className="h-5 w-5 text-accent mx-auto" />, label: "Leaderboard" },
               {

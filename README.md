@@ -1,119 +1,262 @@
-# Creativity Jigsaw Puzzle Game
+# Creativity is… — a jigsaw puzzle game about the creative process
+
+A classroom-ready, real-time puzzle game for teaching the four stages of creativity. Students
+assemble an elephant illustration by placing stage keys and matching quotes; a teacher runs the
+session from a live dashboard.
+
+Built with React 18, TypeScript, Vite, Tailwind CSS and Supabase (Postgres, Realtime, Auth).
+
+![Landing page, light theme](deliverables/design-polish/landing-light-1440.webp)
+
+<details>
+<summary>Dark theme</summary>
+
+![Landing page, dark theme](deliverables/design-polish/landing-dark-1440.webp)
+
+</details>
+
+---
 
 ## Overview
 
-A classroom-ready, web-based jigsaw puzzle game where players assemble an elephant-themed image while matching the stages of creativity (Preparation, Incubation, Illumination, Evaluation, Elaboration) with their corresponding quotes. Features a Game Master role with full control and a real-time multiplayer experience.
+The game teaches **four stages of the creative process** — Preparation, Incubation, Illumination
+and Verification. Each stage owns one column of the board. The top row holds the four stage keys;
+every row below it holds quotes belonging to that column's stage.
 
-## Core Features
+A student's own answer to *"Where do you get your best ideas?"* is injected into the board as a
+guaranteed Incubation quote, so the puzzle contains something they wrote themselves.
 
-### 1. Landing Page & Game Lobby
+Sessions are real-time: the teacher creates a game, shares a 6-character code, and every player's
+board and score update live.
 
-- Clean, inviting landing page with the game title "Creativity is..." and a playful design
-- **Game Master**: Can create a new game session, generating a unique shareable link
-- **Players**: Join via the shared link, enter a nickname, and wait in a lobby
-- Game Master sees a live list of connected players and can start the round when ready
+## Gameplay
 
-### 2. The Puzzle Image
+**Two phases, one board.**
 
-- A well-designed, aesthetically pleasing elephant illustration (whimsical, colorful, classroom-friendly) used as the puzzle background
-- The image is embedded as a static asset
+1. **Phase 1 — stage keys.** Place the four stage keys (Preparation, Incubation, Illumination,
+   Verification) in the top row.
+2. **Phase 2 — quotes.** Each remaining slot takes a quote from the stage above it. Higher
+   difficulties add more quote rows.
 
-### 3. Jigsaw Puzzle Mechanics
+**Interaction is tap-to-place**, on desktop and mobile alike: tap a piece in the tray, then tap the
+slot you think it belongs to. There is no drag-and-drop; a mis-tap is simply rejected with a shake
+and a sound, and counts as a miss.
 
-- **Two-phase gameplay:**
-  - **Phase 1 – Stage Names**: Players first place the 5 creativity stage name pieces (Preparation, Incubation, Illumination, Evaluation, Elaboration) into the correct positions on the puzzle board
-  - **Phase 2 – Quotes**: After stages are placed, quote pieces become available to match with their corresponding stage
-- True jigsaw-style piece segmentation with drag-and-drop on desktop and touch/tap on mobile
-- Snap-to-grid behavior — pieces lock into place when dropped near the correct position
-- Visual and audio feedback for correct placements and incorrect attempts
+**Decoys.** From Medium upwards, the tray also contains quote pieces that belong to no slot.
+Placing one costs points, so the tray is not a free-for-all — it has to be read.
 
-### 4. Game Master Controls
+**Combos.** Consecutive correct placements build a streak worth bonus **XP** (20 + 5 per streak
+step). XP is a live, in-session flourish shown on screen; the score that reaches the leaderboard is
+computed by the formula below and does not include XP.
 
-- Start/stop game rounds
-- Set difficulty level (Easy / Medium / Hard / Very Hard — affects time limits)
-- View live scoreboard during gameplay
-- Kick players from the session
-- Reset or start a new round
+### The four stages
 
-### 5. Scoring & Feedback
+| Stage | Column | Theme |
+|---|---|---|
+| Preparation | 1 | Laying the groundwork |
+| Incubation | 2 | Letting ideas develop in the background |
+| Illumination | 3 | The moment of insight |
+| Verification | 4 | Testing and proving the idea |
 
-- **Timer**: Counts elapsed time per player
-- **Points system**: Points awarded based on speed and accuracy (fewer incorrect attempts = higher score)
-- **Correct/Incorrect alerts**: Clear visual feedback (green flash for correct, red shake for incorrect)
-- **Difficulty multiplier**: Harder difficulty levels award more points
+Each stage carries a pool of six quotes; one is selected per game, so two sessions on the same
+difficulty do not present an identical board.
 
-### 6. Real-Time Leaderboard & Scoreboard
+## Difficulty and scoring
 
-- Live scoreboard visible to Game Master during the game
-- Post-round results screen showing rankings for all players
-- Persistent all-time leaderboard saved across sessions
+Difficulty changes **both the grid and the clock**, not just the timer.
 
-### 7. Backend (Supabase)
+| Difficulty | Grid | Time limit | Multiplier | Decoys |
+|---|---|---|---|---|
+| Easy | 4 × 3 | none | ×1 | 0 |
+| Medium | 4 × 4 | 5 minutes | ×1.5 | 1 |
+| Hard | 4 × 5 | 3 minutes | ×2 | 2 |
+| Very Hard | 4 × 6 | 90 seconds | ×3 | 3 |
 
-- **Database tables**: Players, game sessions, scores, leaderboard history
-- **Real-time**: Live updates for lobby, scoreboard, and game state using Supabase Realtime
-- **Authentication**: Simple nickname-based entry (no full account signup required), Game Master identified via session creator role
-- **Persistent storage**: All-time leaderboard and past game results saved to the database
+Score for a completed board:
 
-### 8. Responsive Design (Desktop & Mobile)
+```
+base       = pieces × 40
+time       = floor(elapsed_seconds)          # 1 point per second
+misses     = incorrect_attempts × 15
+raw        = max(base − time − misses, 50)   # floor of 50
+score      = round(raw × multiplier)
+```
 
-- Fully responsive layout that adapts to phone, tablet, and desktop screens
-- Touch-optimized interactions for mobile devices
-- Puzzle board scales appropriately to screen size
-- Large, tappable UI elements for mobile users
-- Tested for 20–30 simultaneous users
+Running out of time still records the score, but the result is stored as **incomplete** — it never
+counts as a win and never enters the all-time leaderboard. Only a finished board does.
 
-### 9. Additional UX Polish
+> Invariant worth knowing if you change the grid: each column draws all its quotes from a single
+> stage, so `rows − 1` must never exceed the number of quotes per stage. That is why every stage
+> holds six quotes, and it is asserted in `src/test/gameData.test.ts`.
 
-- Smooth animations for piece movement and snapping
-- Progress indicator showing how many pieces are placed
-- Confetti or celebration animation on puzzle completion
-- Clear instructions/rules modal for first-time players
-- Dark/light theme support for classroom projector compatibility
+## Roles
 
-## Getting Started
+**Students** need no account. They sign in anonymously, answer the best-ideas prompt (their answer
+becomes a puzzle piece), then join with a code or a shared link.
 
-### Prerequisites
+**Teachers** create an account with email and password, then create sessions, set difficulty,
+start/pause/end rounds, kick players, broadcast a message to the room, and export results as CSV.
 
-- Node.js and npm (or yarn/bun)
+The teacher's dashboard shows a join code and QR code, a live scoreboard, and per-player time,
+misses and completion state.
 
-### Install and run
+## Routes
+
+| Path | Page | Notes |
+|---|---|---|
+| `/` | Landing | Join / teacher login / leaderboard entry points |
+| `/teacher/login` | Teacher portal | Sign in, sign up, demo account |
+| `/lobby/:sessionId` | Lobby | Waiting room; teacher starts the round here |
+| `/game/:sessionId` | Board | The puzzle itself |
+| `/results/:sessionId` | Results | Final scoreboard and full artwork |
+| `/dashboard/:sessionId` | Teacher dashboard | Live control panel |
+| `/leaderboard` | All-time leaderboard | Aggregated across sessions |
+| `/lab07/game` | Puzzle lab | Standalone 8-puzzle and sliding-picture puzzles |
+| `*` | 404 | Not-found page |
+
+Landing and 404 load eagerly; every other route is code-split with `React.lazy`.
+
+## Tech stack
+
+| Layer | Choice |
+|---|---|
+| Framework | React 18.3 + TypeScript 5.8 |
+| Build | Vite 5.4 |
+| Styling | Tailwind CSS 3.4, shadcn/ui (Radix primitives) |
+| Animation | Framer Motion 12 |
+| Routing | React Router 6 |
+| Backend | Supabase — Postgres, Realtime (`postgres_changes`), Auth |
+| Toasts | Sonner |
+| Tests | Vitest 3 + Testing Library (jsdom) |
+
+## Getting started
+
+**Prerequisites:** Node.js 18 or newer, npm, and a Supabase project.
 
 ```bash
-# Install dependencies
 npm install
-
-# Start the development server
-npm run dev
+cp .env.example .env      # then fill in your Supabase values
+npm run dev               # http://localhost:8080
 ```
-
-### Build for production
-
-```bash
-npm run build
-```
-
-The built files will be in the `dist/` directory.
 
 ### Environment
 
-Copy `.env.example` to `.env` and set:
+| Variable | Required | Purpose |
+|---|---|---|
+| `VITE_SUPABASE_URL` | yes | Project URL, e.g. `https://xxxx.supabase.co` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | yes | Public **anon** key |
+| `SUPABASE_SERVICE_ROLE_KEY` | no | Only for the demo-user seed script; never expose to the client |
 
-- `VITE_SUPABASE_URL` — your project URL (e.g. `https://xxxx.supabase.co`)
-- `VITE_SUPABASE_PUBLISHABLE_KEY` — the **anon** public key from Supabase
+`VITE_`-prefixed variables are **inlined into the client bundle at build time**. Treat them as
+public: the anon key is safe to ship because row-level security does the enforcement, but the
+service-role key is not and must never be prefixed with `VITE_`.
 
-## Create Supabase (backend setup)
+If the two required variables are missing, the app still loads and logs an actionable error rather
+than white-screening; sign-in and score saving will fail until they are set.
 
-Full step-by-step instructions are in **[supabase/README.md](supabase/README.md)**. Summary:
+### Supabase setup
 
-1. **Create a project** at [supabase.com](https://supabase.com).
-2. **Get URL and anon key** from **Project Settings** → **API** and set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env`.
-3. **Run migrations** with the Supabase CLI (`supabase link` then `supabase db push`) or by running each file in `supabase/migrations/` in order in the SQL Editor.
-4. **Enable Auth:** **Email** (on) and **Anonymous** (on) under **Authentication** → **Providers**.
-5. **Optional – demo teacher:** Create user `demo.teacher@puzzle.com` / `Teacher2024!` in the Dashboard, or add `SUPABASE_SERVICE_ROLE_KEY` to `.env` and run `npm run db:seed-demo`.
+Full walkthrough: **[supabase/README.md](supabase/README.md)**. In short:
 
-## Tech Stack
+1. Create a project at [supabase.com](https://supabase.com).
+2. Copy the URL and anon key from **Project Settings → API** into `.env`.
+3. Apply the schema — `supabase link && supabase db push`, or run `supabase/run-all-migrations.sql`
+   in the SQL editor.
+4. Enable the **Email** and **Anonymous** auth providers.
+5. Optional demo teacher: create `demo.teacher@puzzle.com` / `Teacher2024!` in the dashboard, or set
+   `SUPABASE_SERVICE_ROLE_KEY` and run `npm run db:seed-demo`.
 
-- **Frontend**: React, TypeScript, Vite
-- **UI**: Tailwind CSS, shadcn/ui, Framer Motion
-- **Backend**: Supabase (PostgreSQL, Realtime, Auth)
+The demo credentials are shown on the login page by design, so it is a shared account — create real
+teacher accounts for actual classroom use.
+
+### Scripts
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server with HMR on port 8080 |
+| `npm run build` | Production build to `dist/` |
+| `npm run preview` | Serve the built output locally |
+| `npm run lint` | ESLint over the whole repo |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm test` | Full Vitest suite, single run |
+| `npm run test:watch` | Vitest in watch mode |
+| `npm run db:seed-demo` | Create the demo teacher (needs the service-role key) |
+| `npm run supabase:push` | Push migrations to the linked project |
+
+## Testing
+
+```bash
+npm run typecheck && npm run lint && npm test && npm run build
+```
+
+The suite covers the parts where a bug is silent — the score maths, the grid-scaling invariant,
+leaderboard write de-duplication, CSV escaping, and the retry paths:
+
+| File | Covers |
+|---|---|
+| `src/test/gameData.test.ts` | Scoring (including negative/`NaN` time), grid scaling and the solvability invariant, decoy pool, game codes, quote injection |
+| `src/test/update-score.test.ts` | Row recovery when the player hasn't loaded, success/failure reporting, the timeout write guard |
+| `src/test/retry-feedback.test.tsx` | Error states and retry toasts on the leaderboard and dashboard |
+| `src/test/csv.test.ts` | RFC-4180 quoting and CSV-injection guarding |
+| `src/lib/bestIdeasAnswer.test.ts` | Answer normalisation |
+
+Test config lives in `vitest.config.ts` (Vitest ignores a `test` block in `vite.config.ts` when that
+file exists).
+
+## Deployment
+
+The output in `dist/` is a static single-page app.
+
+1. `npm ci && npm run build`
+2. Publish `dist/` to any static host.
+3. **Configure a rewrite so every path serves `index.html`.** Without it, deep links such as
+   `/results/ABC123` return 404 from the host. On Netlify: `/* /index.html 200`. On Vercel, a
+   catch-all rewrite to `/index.html`. On GitHub Pages, a `404.html` copy of `index.html`.
+4. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in the host's build environment
+   **before** building — they are baked in at build time, not read at runtime.
+5. Add the deployed origin to Supabase **Authentication → URL Configuration** so email confirmation
+   links point back at your site.
+
+## Project structure
+
+```
+src/
+  components/       UI, game board, theme provider, instructions
+  components/ui/    shadcn/ui primitives
+  hooks/            auth, session, best-ideas, theme
+  lib/              game data and scoring, grid config, CSV, clipboard, audio
+  pages/            one module per route
+  test/             Vitest suites and setup
+  integrations/     generated Supabase client and types
+supabase/           migrations, combined SQL, setup guide
+scripts/            demo-user seed script
+```
+
+### Repository contents
+
+This repository also carries material that is **not** part of the built app, kept for reference:
+
+- `JigsawPuzzle-main/` — a Unity jigsaw prototype used as a design reference. Unlicense (public
+  domain); not compiled or shipped by the web build.
+- `puzzle_design 2/` — early design specification, asset inventory and an abandoned prototype.
+- `deliverables/` — QA reports and screenshots from the review passes.
+- `JIGSAW_PUZZLE_*.md`, `MOBILE_OPTIMIZATION.md`, `TESTING_GUIDE.md` — historical design and testing
+  notes. `README.md` is the current description of the app.
+
+None of these are imported by `src/`; deleting them would not affect the build.
+
+## Security notes
+
+- **`.env` is not committed.** It was tracked historically, so if you cloned before that change the
+  anon key and project URL are in your local history. They are public-by-design (they ship in the
+  client bundle), and row-level security is what protects the data — but rotate the anon key in the
+  Supabase dashboard if the project is public and the key has been abused.
+- Row-level security is enabled on every table; players may read sessions they belong to and update
+  only their own row.
+- Nicknames are user input and are escaped on CSV export (quoted per RFC 4180 and prefixed against
+  spreadsheet formula injection).
+
+## License
+
+No license is granted. The repository is marked `UNLICENSED` in `package.json`; add a license file
+if you intend to distribute it. `JigsawPuzzle-main/` carries its own Unlicense and is unaffected.
